@@ -17,174 +17,83 @@ typedef struct
  double B_a[2], B_b[2], Bx_a[2], Bx_b[2], By_a[2], By_b[2], Bz_a[2], Bz_b[2];
  double dB_dz[2], dtheta_dz[2];
  double n_e, T0;
- double n_H, n_He;
+ double n_Htotal, n_H, n_He;
  double dz;
  double f_p;
- int ST_on, FF_on, GR_on, HHe_on, s_max, j_ofs, ABcode;
+ int DEM_on, DDM_on, FF_on, GR_on, HHe_on, s_max, j_ofs, ABcode;
 } Voxel;
 
-typedef struct
+void ProcessVoxels(int Nz0, double *Parms, int DEM_on_global, int DDM_on_global, 
+                   int NT, double *T_arr, double *lnT_arr, double *DEM_arr, double *DDM_arr, Voxel *V)
 {
- int s; //harmonic number; if <2, then QT layer assumed
- double z0; //location, relative to the voxel start
-} Level;
+ #define InSize 15
 
-void AddLevel(Level **l, int s, double z0, int *Nlev, int *NlevMax)
-{
- int old=0;
-
- for (int i=0; i<*Nlev; i++) if ((*l)[i].s==s && (*l)[i].z0==z0)
+ for (int j=0; j<Nz0; j++)
  {
-  old=1;
-  break;
- }
+  double *p=Parms+j*InSize;
 
- if (!old)
- {
-  (*l)[*Nlev].s=s;
-  (*l)[*Nlev].z0=z0;
-  (*Nlev)++;
+  V[j].dz=max(p[0], 0.0);
+  V[j].T0=max(p[1], 0.0);
+  V[j].n_e=max(p[2], 0.0);
+  V[j].B=max(p[3], 0.0);
+  V[j].theta=p[4]*M_PI/180;
+  V[j].psi=p[5]*M_PI/180;
 
-  if (*Nlev>=*NlevMax)
+  int em_flag=(int)p[6];
+  V[j].GR_on=((em_flag & 1)==0);
+  V[j].FF_on=((em_flag & 2)==0);
+  V[j].HHe_on=((em_flag & 4)==0);
+
+  V[j].s_max=(int)p[7];
+  V[j].n_Htotal=max(p[8], 0.0);
+  V[j].n_H=max(p[9], 0.0); 
+  V[j].n_He=max(p[10], 0.0);
+
+  V[j].DEM_on=(p[11]==0 && DEM_on_global);
+  V[j].DDM_on=(p[12]==0 && DDM_on_global);
+
+  V[j].ABcode=(int)p[13];
+  if (V[j].ABcode<0 || V[j].ABcode>2) V[j].ABcode=0;
+
+  V[j].j_ofs=j;
+
+  V[j].Bx=V[j].B*sin(V[j].theta)*cos(V[j].psi);
+  V[j].By=V[j].B*sin(V[j].theta)*sin(V[j].psi);
+  V[j].Bz=V[j].B*cos(V[j].theta);
+
+  if (V[j].DDM_on) DDM_moments(T_arr, lnT_arr, DDM_arr+NT*j, NT, &(V[j].n_e), &(V[j].T0));
+  else if (V[j].DEM_on) DEM_moments(T_arr, lnT_arr, DEM_arr+NT*j, NT, &(V[j].n_e), &(V[j].T0));
+  else if (V[j].n_e==0.0 && V[j].n_H==0.0 && V[j].n_He==0.0) if (V[j].n_Htotal>0)
   {
-   (*NlevMax)+=10;
-   *l=(Level*)realloc(*l, sizeof(Level)*(*NlevMax));
+   double a=Saha(V[j].n_Htotal, V[j].T0); 
+   V[j].n_e=V[j].n_Htotal*a;
+   V[j].n_H=V[j].n_Htotal*(1.0-a);
+   V[j].n_He=0; //###
   }
- }
-}
-
-void SortLevels(Level *l, int Nlev)
-{
- if (Nlev>1)
- {
-  Level a;
-
-  for (int i=0; i<(Nlev-1); i++) for (int j=i+1; j<Nlev; j++) if (l[i].z0>l[j].z0)
-  {
-   memcpy(&a, l+i, sizeof(Level));
-   memcpy(l+i, l+j, sizeof(Level));
-   memcpy(l+j, &a, sizeof(Level));
-  }
- }
-}
-
-int MW_Transfer(int Nz0, int Nf, int NT, int InSize, double *Parms, double *T_arr, double *DEM_arr, double *DDM_arr, double *RL)
-{
- #define OutSize 7
-
- int res=0;
- 
- double *f=(double*)malloc(sizeof(double)*Nf);
- if (Parms[7]>0)
- {
-  f[0]=Parms[7];
-  double dnu=pow(10.0, Parms[8]);
-  for (int i=1; i<Nf; i++) f[i]=f[i-1]*dnu;
- }
- else for (int i=0; i<Nf; i++) f[i]=RL[i*OutSize]*1e9;
-
- double Sang=Parms[0]/(sqr(AU)*sfu);
-
- Voxel *V=(Voxel*)malloc(sizeof(Voxel)*Nz0);
- int Nz=0;
-
- int jmin=0;
- for (jmin=0; jmin<Nz0; jmin++)
- {
-  double *p=Parms+jmin*InSize;
-
-  int nonzero=0;
-  if (p[13]!=0 || NT<2) nonzero=p[3]>0; //ST on
-  else //ST off
-  {
-   double *DDM_loc=DDM_arr+NT*jmin;
-   for (int i=0; i<NT; i++) if (DDM_loc[i]>0)
-   {
-    nonzero=1;
-    break;
-   }
-  }
-
-  if (nonzero) break;
- }
-
- int jmax=0;
- for (jmax=Nz0-1; jmax>=0; jmax--)
- {
-  double *p=Parms+jmax*InSize;
-
-  int nonzero=0;
-  if (p[13]!=0 || NT<2) nonzero=p[3]>0; //ST on
-  else //ST off
-  {
-   double *DDM_loc=DDM_arr+NT*jmax;
-   for (int i=0; i<NT; i++) if (DDM_loc[i]>0)
-   {
-    nonzero=1;
-    break;
-   }
-  }
-
-  if (nonzero) break;
- }
-
- double *lnT_arr=0;
- if (NT>=2) for (int jc=jmin; jc<=jmax; jc++)
- {
-  double *p=Parms+jc*InSize;
-
-  if (p[13]==0) //ST off
-  {
-   lnT_arr=(double*)malloc(sizeof(double)*NT);
-   for (int i=0; i<NT; i++) lnT_arr[i]=log(T_arr[i]);
-   break;
-  }
- } 
- 
- for (int jc=jmin; jc<=jmax; jc++)
- {
-  double *p=Parms+jc*InSize;
-
-  if (p[1]>0) //dz>0
-  {
-   V[Nz].dz=p[1];
-   
-   V[Nz].B=p[4];
-   V[Nz].theta=p[5]*M_PI/180;
-   V[Nz].psi=p[6]*M_PI/180;
-   V[Nz].Bx=V[Nz].B*sin(V[Nz].theta)*cos(V[Nz].psi);
-   V[Nz].By=V[Nz].B*sin(V[Nz].theta)*sin(V[Nz].psi);
-   V[Nz].Bz=V[Nz].B*cos(V[Nz].theta);
-
-   int flag=(int)p[9];
-   V[Nz].GR_on=((flag & 1)==0);
-   V[Nz].FF_on=((flag & 2)==0);
-   V[Nz].HHe_on=((flag & 4)==0);
-
-   V[Nz].s_max=(int)p[10];
-   
-   V[Nz].n_H=p[11]; 
-   V[Nz].n_He=p[12];
-
-   V[Nz].j_ofs=jc;
-
-   V[Nz].ST_on=p[13]!=0.0 || NT<2; //single temperature on/off
-   if (V[Nz].ST_on)
-   {
-    V[Nz].T0=p[2];
-    V[Nz].n_e=p[3];
-   }
-   else DDM_moments(T_arr, lnT_arr, DDM_arr+NT*jc, NT, &(V[Nz].n_e), &(V[Nz].T0));
-
-   V[Nz].ABcode=(int)p[14];
-   if (V[Nz].ABcode<0 || V[Nz].ABcode>2) V[Nz].ABcode=0;
                  
-   V[Nz].f_p=e*sqrt(V[Nz].n_e/me/M_PI); 
-
-   Nz++;
-  }
+  V[j].f_p=e*sqrt(V[j].n_e/me/M_PI); 
  }
+}
 
+void CompressVoxels(Voxel *V, int Nz0, int *Nz)
+{
+ int jmin;
+ for (jmin=0; jmin<Nz0; jmin++) if (V[jmin].n_e>0) break;
+
+ int jmax;
+ for (jmax=Nz0-1; jmax>=0; jmax--) if (V[jmax].n_e>0) break;
+
+ *Nz=0;
+
+ for (int j=jmin; j<=jmax; j++) if (V[j].dz>0)
+ {
+  if (*Nz!=j) memcpy(V+(*Nz), V+j, sizeof(Voxel));
+  (*Nz)++;
+ }
+}
+
+void ProcessVoxelGradients(Voxel *V, int Nz)
+{
  for (int j=0; j<Nz; j++)
  {
   if (j==0 && j==(Nz-1))
@@ -236,7 +145,7 @@ int MW_Transfer(int Nz0, int Nf, int NT, int InSize, double *Parms, double *T_ar
       z2=V[j1].dz+V[j2].dz/2;
      }
     }
-
+                
     V[j].B_a[k]=V[j].dB_dz[k]=(V[j1].B-V[j2].B)/(z1-z2);
     V[j].B_b[k]=(V[j2].B*z1-V[j1].B*z2)/(z1-z2);
     V[j].Bx_a[k]=(V[j1].Bx-V[j2].Bx)/(z1-z2);
@@ -254,6 +163,91 @@ int MW_Transfer(int Nz0, int Nf, int NT, int InSize, double *Parms, double *T_ar
    V[j].Bz2=V[j].Bz_a[1]*V[j].dz+V[j].Bz_b[1];
   }
  }
+}
+
+typedef struct
+{
+ int s; //harmonic number; if <2, then QT layer assumed
+ double z0; //location, relative to the voxel start
+} Level;
+
+void AddLevel(Level **l, int s, double z0, int *Nlev, int *NlevMax)
+{
+ int old=0;
+
+ for (int i=0; i<*Nlev; i++) if ((*l)[i].s==s && (*l)[i].z0==z0)
+ {
+  old=1;
+  break;
+ }
+
+ if (!old)
+ {
+  (*l)[*Nlev].s=s;
+  (*l)[*Nlev].z0=z0;
+  (*Nlev)++;
+
+  if (*Nlev>=*NlevMax)
+  {
+   (*NlevMax)+=10;
+   *l=(Level*)realloc(*l, sizeof(Level)*(*NlevMax));
+  }
+ }
+}
+
+void SortLevels(Level *l, int Nlev)
+{
+ if (Nlev>1)
+ {
+  Level a;
+
+  for (int i=0; i<(Nlev-1); i++) for (int j=i+1; j<Nlev; j++) if (l[i].z0>l[j].z0)
+  {
+   memcpy(&a, l+i, sizeof(Level));
+   memcpy(l+i, l+j, sizeof(Level));
+   memcpy(l+j, &a, sizeof(Level));
+  }
+ }
+}
+
+int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, double *DEM_arr, double *DDM_arr, double *RL)
+{
+ #define OutSize 7
+
+ int res=0;
+
+ int Nz0=Lparms[0];
+ int Nf=Lparms[1];
+ int NT=Lparms[2];
+ int DEM_on_global=(Lparms[3]==0 && NT>1);
+ int DDM_on_global=(Lparms[4]==0 && NT>1);
+
+ double Sang=Rparms[0]/(sqr(AU)*sfu);
+ 
+ double *f=(double*)malloc(sizeof(double)*Nf);
+ if (Rparms[1]>0)
+ {
+  f[0]=Rparms[1];
+  double dnu=pow(10.0, Rparms[2]);
+  for (int i=1; i<Nf; i++) f[i]=f[i-1]*dnu;
+ }
+ else for (int i=0; i<Nf; i++) f[i]=RL[i*OutSize]*1e9;
+
+ double *lnT_arr=0;
+ if (DEM_on_global || DDM_on_global)
+ {
+  lnT_arr=(double*)malloc(sizeof(double)*NT);
+  for (int i=0; i<NT; i++) lnT_arr[i]=log(T_arr[i]);
+ } 
+
+ Voxel *V=(Voxel*)malloc(sizeof(Voxel)*Nz0);
+
+ ProcessVoxels(Nz0, Parms, DEM_on_global, DDM_on_global, NT, T_arr, lnT_arr, DEM_arr, DDM_arr, V);
+
+ int Nz;
+ CompressVoxels(V, Nz0, &Nz);
+
+ ProcessVoxelGradients(V, Nz);
 
  int NlevMax=10;
  Level *l=(Level*)malloc(sizeof(Level)*NlevMax);
@@ -329,12 +323,12 @@ int MW_Transfer(int Nz0, int Nf, int NT, int InSize, double *Parms, double *T_ar
 
      if (V[j].FF_on)
      {
-      if (V[j].ST_on) 
+      if (V[j].DEM_on) FindFF_DEM_XO(f[i], theta, V[j].f_p, f_B, T_arr, lnT_arr, DEM_arr+NT*V[j].j_ofs, NT, V[j].ABcode, &jXff, &kXff, &jOff, &kOff);
+      else
       {
        FindFF_single(f[i], theta, -1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].ABcode, &jXff, &kXff);
        FindFF_single(f[i], theta,  1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].ABcode, &jOff, &kOff); 
       }
-      else FindFF_DEM_XO(f[i], theta, V[j].f_p, f_B, T_arr, lnT_arr, DEM_arr+NT*V[j].j_ofs, NT, V[j].ABcode, &jXff, &kXff, &jOff, &kOff);
      }
 
      double jXen, kXen, jOen, kOen;
@@ -410,12 +404,12 @@ int MW_Transfer(int Nz0, int Nf, int NT, int InSize, double *Parms, double *T_ar
       double tauX, tauO, I0X, I0O;
       tauX=tauO=I0X=I0O=0;
 
-      if (V[j].ST_on)
+      if (V[j].DDM_on) FindGR_DDM_XO(f[i], theta, l[k].s, V[j].f_p, f_B, T_arr, lnT_arr, DDM_arr+NT*V[j].j_ofs, NT, LB, &tauX, &I0X, &tauO, &I0O);
+      else
       {
        FindGR_single(f[i], theta, -1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, &tauX, &I0X);
        FindGR_single(f[i], theta,  1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, &tauO, &I0O);
       }
-      else FindGR_DDM_XO(f[i], theta, l[k].s, V[j].f_p, f_B, T_arr, lnT_arr, DDM_arr+NT*V[j].j_ofs, NT, LB, &tauX, &I0X, &tauO, &I0O);
 
       double eX=exp(-tauX);
       double dIX=I0X*((1.0-eX) ? 1.0-eX : tauX);

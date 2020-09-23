@@ -10,20 +10,21 @@ extern "C" __declspec(dllexport) int GET_MW(int argc, void **argv)
 extern "C" int GET_MW(int argc, void **argv)
 #endif
 {
- if (argc<6)
+ if (argc<7)
  {
   IDLmsg("GET_MW error: not enough parameters in the function call.");
   return -1;
  }
 
- int *Ndat=(int*)argv[0];
- double *Parms=(double*)argv[1];
- double *T_arr=(double*)argv[2];
- double *DEM_arr=(double*)argv[3];
- double *DDM_arr=(double*)argv[4];
- double *RL=(double*)argv[5];
+ int *Lparms=(int*)argv[0];
+ double *Rparms=(double*)argv[1];
+ double *Parms=(double*)argv[2];
+ double *T_arr=(double*)argv[3];
+ double *DEM_arr=(double*)argv[4];
+ double *DDM_arr=(double*)argv[5];
+ double *RL=(double*)argv[6];
            
- int res=MW_Transfer(Ndat[0], Ndat[1], Ndat[2], Ndat[3], Parms, T_arr, DEM_arr, DDM_arr, RL);
+ int res=MW_Transfer(Lparms, Rparms, Parms, T_arr, DEM_arr, DDM_arr, RL);
 
  return res;
 }
