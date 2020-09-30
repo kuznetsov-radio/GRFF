@@ -33,7 +33,7 @@ const char* arr3[]={
  "DEM_key_loc;       0   ;0/1;     data;                        DEM on/off",
  "DDM_key_loc;       0   ;0/1;     data;                        DDM on/off",
  "  abund_key;       0   ;0/1/2;   data;          Coronal / Caffau / Scott",
- "     Vox_ID;       0   ;int;     data;                          Voxel ID"
+ "    VoxelID;       0   ;int;     data;                          Voxel ID"
 };
 
 #define N3 15
