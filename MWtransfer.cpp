@@ -2,6 +2,7 @@
 #include <math.h>
 #include <float.h>
 #include <memory.h>
+#include "MWtransfer.h"
 #include "Plasma.h"
 #include "ExtMath.h"
 #include "DEM.h"
@@ -17,17 +18,15 @@ typedef struct
  double B_a[2], B_b[2], Bx_a[2], Bx_b[2], By_a[2], By_b[2], Bz_a[2], Bz_b[2];
  double dB_dz[2], dtheta_dz[2];
  double n_e, T0;
- double n_Htotal, n_H, n_He;
+ double n_H, n_He;
  double dz;
  double f_p;
- int DEM_on, DDM_on, FF_on, GR_on, HHe_on, s_max, j_ofs, ABcode;
+ int DEM_on, DDM_on, FF_on, GR_on, HHe_on, s_max, j_ofs, ABcode, dfcode;
+ double kn;
 } Voxel;
 
-void ProcessVoxels(int Nz0, double *Parms, int DEM_on_global, int DDM_on_global, 
-                   int NT, double *T_arr, double *lnT_arr, double *DEM_arr, double *DDM_arr, Voxel *V)
+void ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_arr, double *DEM_arr, double *DDM_arr, Voxel *V)
 {
- #define InSize 15
-
  for (int j=0; j<Nz0; j++)
  {
   double *p=Parms+j*InSize;
@@ -45,15 +44,19 @@ void ProcessVoxels(int Nz0, double *Parms, int DEM_on_global, int DDM_on_global,
   V[j].HHe_on=((em_flag & 4)==0);
 
   V[j].s_max=(int)p[7];
-  V[j].n_Htotal=max(p[8], 0.0);
-  V[j].n_H=max(p[9], 0.0); 
-  V[j].n_He=max(p[10], 0.0);
+  V[j].n_H=max(p[8], 0.0); 
+  V[j].n_He=max(p[9], 0.0);
 
-  V[j].DEM_on=(p[11]==0 && DEM_on_global);
-  V[j].DDM_on=(p[12]==0 && DDM_on_global);
+  V[j].DEM_on=(p[10]==0 && NT>1);
+  V[j].DDM_on=(p[11]==0 && NT>1);
 
-  V[j].ABcode=(int)p[13];
+  V[j].ABcode=(int)p[12];
   if (V[j].ABcode<0 || V[j].ABcode>2) V[j].ABcode=0;
+
+  V[j].dfcode=(int)p[13];
+  if (V[j].dfcode<0 || V[j].dfcode>2) V[j].dfcode=0;
+
+  V[j].kn=p[14]; //probably, has to be checked for correct values
 
   V[j].j_ofs=j;
 
@@ -63,13 +66,6 @@ void ProcessVoxels(int Nz0, double *Parms, int DEM_on_global, int DDM_on_global,
 
   if (V[j].DDM_on) DDM_moments(T_arr, lnT_arr, DDM_arr+NT*j, NT, &(V[j].n_e), &(V[j].T0));
   else if (V[j].DEM_on) DEM_moments(T_arr, lnT_arr, DEM_arr+NT*j, NT, &(V[j].n_e), &(V[j].T0));
-  else if (V[j].n_e==0.0 && V[j].n_H==0.0 && V[j].n_He==0.0) if (V[j].n_Htotal>0)
-  {
-   double a=Saha(V[j].n_Htotal, V[j].T0); 
-   V[j].n_e=V[j].n_Htotal*a;
-   V[j].n_H=V[j].n_Htotal*(1.0-a);
-   V[j].n_He=0; //###
-  }
                  
   V[j].f_p=e*sqrt(V[j].n_e/me/M_PI); 
  }
@@ -219,8 +215,6 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
  int Nz0=Lparms[0];
  int Nf=Lparms[1];
  int NT=Lparms[2];
- int DEM_on_global=(Lparms[3]==0 && NT>1);
- int DDM_on_global=(Lparms[4]==0 && NT>1);
 
  double Sang=Rparms[0]/(sqr(AU)*sfu);
  
@@ -234,7 +228,7 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
  else for (int i=0; i<Nf; i++) f[i]=RL[i*OutSize]*1e9;
 
  double *lnT_arr=0;
- if (DEM_on_global || DDM_on_global)
+ if (NT>1)
  {
   lnT_arr=(double*)malloc(sizeof(double)*NT);
   for (int i=0; i<NT; i++) lnT_arr[i]=log(T_arr[i]);
@@ -242,7 +236,7 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
 
  Voxel *V=(Voxel*)malloc(sizeof(Voxel)*Nz0);
 
- ProcessVoxels(Nz0, Parms, DEM_on_global, DDM_on_global, NT, T_arr, lnT_arr, DEM_arr, DDM_arr, V);
+ ProcessVoxels(Nz0, Parms, NT, T_arr, lnT_arr, DEM_arr, DDM_arr, V);
 
  int Nz;
  CompressVoxels(V, Nz0, &Nz);

@@ -1,6 +1,7 @@
 #include <math.h>
 #include "ExtMath.h"
 #include "Plasma.h"
+#include "Messages.h"
 
 #define cst_min 1e-5
 
@@ -47,7 +48,7 @@ void FindPlasmaDispersion(double f, double f_p, double f_B, double theta, int si
  }
 }
 
-double Saha(double n0, double T0)
+double SahaH(double n0, double T0)
 {
  double x=0.0;
 
@@ -58,4 +59,36 @@ double Saha(double n0, double T0)
  } 
 
  return x;
+}
+
+void SahaHe(double n_p, double T0, double *a12, double *a2)
+{
+ *a12=0;
+ *a2=0;
+
+ if (T0>0.0 && n_p>0.0)
+ {
+  double A=4.0*pow(2.0*M_PI*me*kB*T0/sqr(hPl), 1.5)/n_p;
+
+  double xi12=A*exp(-ieHe12/kB/T0);
+  *a12=xi12/(1.0+xi12); //helium I+II ionization fraction
+
+  double xi2=A*exp(-ieHe2/kB/T0);
+  *a2=xi2/(1.0+xi2); //helium II ionization fraction
+ }
+}
+
+void FindIonizationsSolar(double n0, double T0, double *n_e, double *n_H, double *n_He)
+{
+ double n_Htotal=n0*0.922;
+ double n_Hetotal=n0*0.078;
+
+ double a=SahaH(n_Htotal, T0);
+ double n_p=n_Htotal*a;
+ *n_H=n_Htotal*(1.0-a);
+
+ double a12, a2;
+ SahaHe(n_p, T0, &a12, &a2);
+ *n_He=n_Hetotal*(1.0-a12);
+ *n_e=n_p+n_Hetotal*(a12+a2)+n_Htotal*1e-3;
 }

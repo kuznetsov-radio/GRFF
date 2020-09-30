@@ -9,7 +9,10 @@
 #define AU 1.49599e13
 #define sfu 1e-19
 #define ieH 2.1798718e-11 //hydrogen ionization energy (theoretical), erg
+#define ieHe12 3.9393356e-11 //helium 1st ionization energy, erg
+#define ieHe2 8.71830663945283224e-11 //helium 2nd ionization energy, erg
 
 void FindPlasmaDispersion(double f, double f_p, double f_B, double theta, int sigma,
 	                      double *N, double *FZh, double *L, double *T, double *st_out, double *ct_out);
-double Saha(double n0, double T0);
+double SahaH(double n0, double T0);
+void FindIonizationsSolar(double n0, double T0, double *n_e, double *n_H, double *n_He);
