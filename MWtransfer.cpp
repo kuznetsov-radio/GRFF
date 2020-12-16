@@ -208,8 +208,6 @@ void SortLevels(Level *l, int Nlev)
 
 int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, double *DEM_arr, double *DDM_arr, double *RL)
 {
- #define OutSize 7
-
  int res=0;
 
  int Nz0=Lparms[0];

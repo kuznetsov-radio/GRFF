@@ -57,45 +57,46 @@ void FindGR_DDM_XO(double f, double theta, int s, double f_p, double f_B, double
 
   free(Int_tau);
   free(Int_J);
- }
+ 
 
- if (finite(NX))
- {
-  if (f_p<=0)
+  if (finite(NX))
   {
-   *tauX=0.0;
+   if (f_p<=0)
+   {
+    *tauX=0.0;
+    *I0X=0.0;
+   }
+   else
+   {
+    double lnQ=log(sqr(s*NX*stX)/2)*(s-1);
+    *tauX=exp(lnQ-LogFactorial(s))*I_tau*M_PI*e*e/(f*me*c)*s*s/NX*LB*sqr(TX*ctX+LX*stX+1.0)/(1.0+sqr(TX));
+    *I0X=me*I_J/I_tau*sqr(f*NX);
+   }
+  }
+  else
+  {
+   *tauX=1e100;
    *I0X=0.0;
   }
+
+  if (finite(NO))
+  {
+   if (f_p<=0)
+   {
+    *tauO=0.0;
+    *I0O=0.0;
+   }
+   else
+   {
+    double lnQ=log(sqr(s*NO*stO)/2)*(s-1);
+    *tauO=exp(lnQ-LogFactorial(s))*I_tau*M_PI*e*e/(f*me*c)*s*s/NO*LB*sqr(TO*ctO+LO*stO+1.0)/(1.0+sqr(TO));
+    *I0O=me*I_J/I_tau*sqr(f*NO);
+   }
+  }
   else
   {
-   double lnQ=log(sqr(s*NX*stX)/2)*(s-1);
-   *tauX=exp(lnQ-LogFactorial(s))*I_tau*M_PI*e*e/(f*me*c)*s*s/NX*LB*sqr(TX*ctX+LX*stX+1.0)/(1.0+sqr(TX));
-   *I0X=me*I_J/I_tau*sqr(f*NX);
-  }
- }
- else
- {
-  *tauX=1e100;
-  *I0X=0.0;
- }
-
- if (finite(NO))
- {
-  if (f_p<=0)
-  {
-   *tauO=0.0;
+   *tauO=1e100;
    *I0O=0.0;
   }
-  else
-  {
-   double lnQ=log(sqr(s*NO*stO)/2)*(s-1);
-   *tauO=exp(lnQ-LogFactorial(s))*I_tau*M_PI*e*e/(f*me*c)*s*s/NO*LB*sqr(TO*ctO+LO*stO+1.0)/(1.0+sqr(TO));
-   *I0O=me*I_J/I_tau*sqr(f*NO);
-  }
- }
- else
- {
-  *tauO=1e100;
-  *I0O=0.0;
  }
 }

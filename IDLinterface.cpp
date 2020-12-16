@@ -4,6 +4,11 @@
 #include "Zeta.h"
 #include "Plasma.h"
 #include "Messages.h"
+#ifndef LINUX
+#include <ppl.h>
+#else
+#include <omp.h>
+#endif
 
 #ifndef LINUX
 extern "C" __declspec(dllexport) int GET_MW_main(int argc, void **argv)
@@ -106,6 +111,69 @@ extern "C" int GET_MW(int argc, void **argv)
  free(Parms);
 
  return res;
+}
+
+#ifndef LINUX
+extern "C" __declspec(dllexport) int GET_MW_SLICE(int argc, void** argv)
+#else
+extern "C" int GET_MW_SLICE(int argc, void** argv)
+#endif
+{
+ if (argc<7)
+ {
+  IDLmsg("GET_MW_SLICE error: not enough parameters in the function call.");
+  return -1;
+ }
+
+ int *Lparms_M=(int*)argv[0];
+ double *Rparms_M=(double*)argv[1];
+ double *Parms_M=(double*)argv[2];
+ double *T_arr=(double*)argv[3];
+ double *DEM_arr_M=(double*)argv[4];
+ double *DDM_arr_M=(double*)argv[5];
+ double *RL_M=(double*)argv[6];
+
+ int Npix=Lparms_M[0];
+ int Nz=Lparms_M[1];
+ int Nf=Lparms_M[2];
+ int NT=Lparms_M[3];
+
+ #ifndef LINUX
+
+ concurrency::parallel_for(0, Npix, [&](int pix)
+ {
+  void *ARGV[7];
+  ARGV[0]=(void*)(Lparms_M+1);
+  ARGV[1]=(void*)(Rparms_M+pix*RpSize);
+  ARGV[2]=(void*)(Parms_M+pix*Nz*InSize);
+  ARGV[3]=(void*)T_arr;
+  ARGV[4]=(void*)(DEM_arr_M+pix*Nz*NT);
+  ARGV[5]=(void*)(DDM_arr_M+pix*Nz*NT);
+  ARGV[6]=(void*)(RL_M+pix*Nf*OutSize);
+
+  GET_MW(7, ARGV);
+ });
+
+ #else
+
+ #pragma omp parallel for
+ for(int pix=0; pix<Npix; pix++)
+ {
+  void *ARGV[7];
+  ARGV[0]=(void*)(Lparms_M+1);
+  ARGV[1]=(void*)(Rparms_M+pix*RpSize);
+  ARGV[2]=(void*)(Parms_M+pix*Nz*InSize);
+  ARGV[3]=(void*)T_arr;
+  ARGV[4]=(void*)(DEM_arr_M+pix*Nz*NT);
+  ARGV[5]=(void*)(DDM_arr_M+pix*Nz*NT);
+  ARGV[6]=(void*)(RL_M+pix*Nf*OutSize);
+
+  GET_MW(7, ARGV);
+ }
+
+ #endif
+
+ return 0;
 }
 
 #ifndef LINUX
