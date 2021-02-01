@@ -33,9 +33,24 @@ const double ZetaSolarPhotScott_arr[N_f][N_T]=
 
 double Zeta_Solar(double T, double f, int ABcode)
 {
- double *z=(ABcode==0) ? (double*)ZetaSolarCoronal_arr : 
-	                     (ABcode==1) ? (double*)ZetaSolarPhotCaffau_arr : 
-	                                   (double*)ZetaSolarPhotScott_arr;
+ double *z;
+ switch (ABcode)
+ {
+  case 0: z=(double*)ZetaSolarCoronal_arr;
+	      break;
+  case 1: z=(double*)ZetaSolarPhotCaffau_arr;
+	      break;
+  case 2: z=(double*)ZetaSolarPhotScott_arr;
+	      break;
+  default: z=(double*)ZetaSolarCoronal_arr;
+ }	                                   
 
  return InterpolBilinear(z, (double*)lnf_arr, (double*)lnT_arr, log(f), log(T), N_f, N_T);
+}
+
+double Zeta_arbitrary(double T, double f, int ABcode, int N_fZ, int N_TZ, double *lnfZ_arr, double *lnTZ_arr, double *Z_arr)
+{
+ double *z=Z_arr+ABcode*N_fZ*N_TZ;
+
+ return InterpolBilinear(z, lnTZ_arr, lnfZ_arr, log(T), log(f), N_TZ, N_fZ);
 }

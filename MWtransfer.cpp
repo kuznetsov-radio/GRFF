@@ -206,13 +206,31 @@ void SortLevels(Level *l, int Nlev)
  }
 }
 
-int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, double *DEM_arr, double *DDM_arr, double *RL)
+int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, double *DEM_arr, double *DDM_arr, double *RL,
+                int AZ_on, double *fZ_arr, double *TZ_arr, double *Z_arr)
 {
  int res=0;
 
  int Nz0=Lparms[0];
  int Nf=Lparms[1];
  int NT=Lparms[2];
+
+ int NfZ, NTZ;
+ double *lnfZ_arr, *lnTZ_arr;
+ if (AZ_on)
+ {
+  NfZ=Lparms[3];
+  NTZ=Lparms[4];
+  lnfZ_arr=(double*)malloc(sizeof(double)*NfZ);
+  for (int i=0; i<NfZ; i++) lnfZ_arr[i]=log(fZ_arr[i]);
+  lnTZ_arr=(double*)malloc(sizeof(double)*NTZ);
+  for (int j=0; j<NTZ; j++) lnTZ_arr[j]=log(TZ_arr[j]);
+ }
+ else 
+ {
+  NfZ=NTZ=0;
+  lnfZ_arr=lnTZ_arr=0;
+ }
 
  double Sang=Rparms[0]/(sqr(AU)*sfu);
  
@@ -315,11 +333,14 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
 
      if (V[j].FF_on)
      {
-      if (V[j].DEM_on) FindFF_DEM_XO(f[i], theta, V[j].f_p, f_B, T_arr, lnT_arr, DEM_arr+NT*V[j].j_ofs, NT, V[j].ABcode, &jXff, &kXff, &jOff, &kOff);
+      if (V[j].DEM_on) FindFF_DEM_XO(f[i], theta, V[j].f_p, f_B, T_arr, lnT_arr, DEM_arr+NT*V[j].j_ofs, NT, V[j].ABcode, 
+                                     AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jXff, &kXff, &jOff, &kOff);
       else
       {
-       FindFF_single(f[i], theta, -1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].ABcode, &jXff, &kXff);
-       FindFF_single(f[i], theta,  1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].ABcode, &jOff, &kOff); 
+       FindFF_single(f[i], theta, -1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].ABcode, 
+                     AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jXff, &kXff);
+       FindFF_single(f[i], theta,  1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].ABcode, 
+                     AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jOff, &kOff); 
       }
      }
 
@@ -396,7 +417,8 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
       double tauX, tauO, I0X, I0O;
       tauX=tauO=I0X=I0O=0;
 
-      if (V[j].DDM_on) FindGR_DDM_XO(f[i], theta, l[k].s, V[j].f_p, f_B, T_arr, lnT_arr, DDM_arr+NT*V[j].j_ofs, NT, LB, &tauX, &I0X, &tauO, &I0O);
+      if (V[j].DDM_on) FindGR_DDM_XO(f[i], theta, l[k].s, V[j].f_p, f_B, T_arr, lnT_arr, DDM_arr+NT*V[j].j_ofs, NT, LB, 
+                                     &tauX, &I0X, &tauO, &I0O);
       else
       {
        FindGR_single(f[i], theta, -1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, &tauX, &I0X);
@@ -444,6 +466,8 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
  free(V);
  free(f);
  if (lnT_arr) free (lnT_arr);
+ if (lnfZ_arr) free (lnfZ_arr);
+ if (lnTZ_arr) free (lnTZ_arr);
 
  return res;
 }

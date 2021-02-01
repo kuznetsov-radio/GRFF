@@ -8,6 +8,7 @@
 #include "Messages.h"
 
 void FindFF_single(double f, double theta, int sigma, double f_p, double f_B, double T0, double n_e, int ABcode,
+                   int AZ_on, int NfZ, int NTZ, double *lnfZ_arr, double *lnTZ_arr, double *Z_arr,
                    double *j, double *k)
 {
  double N, FZh;
@@ -18,7 +19,8 @@ void FindFF_single(double f, double theta, int sigma, double f_p, double f_B, do
   if (n_e>0)
   {
    double lnC=lnC1(T0, f);
-   double zeta=Zeta_Solar(T0, f, ABcode);
+   double zeta=(AZ_on) ? Zeta_arbitrary(T0, f, ABcode, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr) :
+                         Zeta_Solar(T0, f, ABcode);
 
    double jff=8*e*e*e*e*e*e*N/(3.0*sqrt(2.0*M_PI)*sqrt(me*me*me)*c*c*c)*
               sqr(n_e)*lnC/sqrt(kB*T0)*(1.0+zeta);
@@ -42,6 +44,7 @@ void FindFF_single(double f, double theta, int sigma, double f_p, double f_B, do
 }
 
 void FindFF_DEM_XO(double f, double theta, double f_p, double f_B, double *T_arr, double *lnT_arr, double *DEM_arr, int NT, int ABcode,
+                   int AZ_on, int NfZ, int NTZ, double *lnfZ_arr, double *lnTZ_arr, double *Z_arr,
                    double *jX, double *kX, double *jO, double *kO)
 {
  double NX, FZhX, NO, FZhO;
@@ -57,8 +60,13 @@ void FindFF_DEM_XO(double f, double theta, double f_p, double f_B, double *T_arr
 
   for (int i=0; i<NT; i++)
   {
-   I_j[i]=(DEM_arr[i]>0) ? 
-          DEM_arr[i]*lnC1(T_arr[i], f)/sqrt(kB*T_arr[i])*(1.0+Zeta_Solar(T_arr[i], f, ABcode))*T_arr[i] : 0.0; //j, a=1/2
+   if (DEM_arr[i]>0)
+   {
+    double zeta=(AZ_on) ? Zeta_arbitrary(T_arr[i], f, ABcode, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr) :
+                          Zeta_Solar(T_arr[i], f, ABcode);
+    I_j[i]=DEM_arr[i]*lnC1(T_arr[i], f)/sqrt(kB*T_arr[i])*(1.0+zeta)*T_arr[i]; //j, a=1/2
+   }
+   else I_j[i]=0;
    I_k[i]=I_j[i]/(kB*T_arr[i]);                                                                                //k, a=3/2
   }
 

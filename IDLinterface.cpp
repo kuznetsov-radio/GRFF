@@ -16,21 +16,38 @@ extern "C" __declspec(dllexport) int GET_MW_main(int argc, void **argv)
 extern "C" int GET_MW_main(int argc, void **argv)
 #endif
 {
- if (argc<7)
- {
-  IDLmsg("GET_MW_main error: not enough parameters in the function call.");
-  return -1;
- }
+ int res=0;
 
- int *Lparms=(int*)argv[0];
- double *Rparms=(double*)argv[1];
- double *Parms=(double*)argv[2];
- double *T_arr=(double*)argv[3];
- double *DEM_arr=(double*)argv[4];
- double *DDM_arr=(double*)argv[5];
- double *RL=(double*)argv[6];
+ if (argc==7 || argc==10)
+ {
+  int *Lparms=(int*)argv[0];
+  double *Rparms=(double*)argv[1];
+  double *Parms=(double*)argv[2];
+  double *T_arr=(double*)argv[3];
+  double *DEM_arr=(double*)argv[4];
+  double *DDM_arr=(double*)argv[5];
+
+  if (argc==7)
+  {
+   double *RL=(double*)argv[6];
            
- int res=MW_Transfer(Lparms, Rparms, Parms, T_arr, DEM_arr, DDM_arr, RL);
+   res=MW_Transfer(Lparms, Rparms, Parms, T_arr, DEM_arr, DDM_arr, RL, 0, 0, 0, 0);
+  }
+  else
+  {
+   double *fZ_arr=(double*)argv[6];
+   double *TZ_arr=(double*)argv[7];
+   double *Z_arr=(double*)argv[8];
+   double *RL=(double*)argv[9];
+
+   res=MW_Transfer(Lparms, Rparms, Parms, T_arr, DEM_arr, DDM_arr, RL, 1, fZ_arr, TZ_arr, Z_arr);
+  }
+ }
+ else
+ {
+  IDLmsg("GET_MW_main error: incorrect number of parameters in the function call.");
+  res=-1;
+ }
 
  return res;
 }
@@ -41,74 +58,96 @@ extern "C" __declspec(dllexport) int GET_MW(int argc, void **argv)
 extern "C" int GET_MW(int argc, void **argv)
 #endif
 {
- if (argc<7)
+ int res=0;
+
+ if (argc==7 || argc==10)
  {
-  IDLmsg("GET_MW error: not enough parameters in the function call.");
-  return -1;
- }
+  int *Lparms1=(int*)argv[0];
+  double *Rparms=(double*)argv[1];
+  double *Parms1=(double*)argv[2];
+  double *T_arr=(double*)argv[3];
+  double *DEM_arr=(double*)argv[4];
+  double *DDM_arr=(double*)argv[5];
+  
+  #define InSize1 15
 
- int *Lparms=(int*)argv[0];
- double *Rparms=(double*)argv[1];
- double *Parms1=(double*)argv[2];
- double *T_arr=(double*)argv[3];
- double *DEM_arr=(double*)argv[4];
- double *DDM_arr=(double*)argv[5];
- double *RL=(double*)argv[6];
+  int Nz=Lparms1[0];
+  double *Parms=(double*)malloc(sizeof(double)*InSize*Nz);
 
- #define InSize1 15
+  int NT=Lparms1[2];
 
- int Nz=Lparms[0];
- double *Parms=(double*)malloc(sizeof(double)*InSize*Nz);
+  int DEM_on_global=(Lparms1[3]==0);
+  int DDM_on_global=(Lparms1[4]==0);
 
- int NT=Lparms[2];
+  int Lparms[6];
+  for (int i=0; i<3; i++) Lparms[i]=Lparms1[i];
+  for (int i=3; i<6; i++) Lparms[i]=Lparms1[i+2];
 
- int DEM_on_global=(Lparms[3]==0);
- int DDM_on_global=(Lparms[4]==0);
-
- for (int j=0; j<Nz; j++)
- {
-  double *p=Parms+j*InSize;
-  double *p1=Parms1+j*InSize1;
-
-  for (int i=0; i<=7; i++) p[i]=p1[i]; //parameters 0-7 are the same in both functions
-  p[8]=p1[9]; //n_H
-  p[9]=p1[10]; //n_He
-  p[10]=DEM_on_global ? p1[11] : 1; //DEM key
-  p[11]=DDM_on_global ? p1[12] : 1; //DDM key
-  p[12]=p1[13]; //abundance key
-  p[13]=p[14]=0; //Maxwellian distribution only
-
-  int DEM_on=(p[10]==0 && NT>1);
-  int DDM_on=(p[11]==0 && NT>1);
-
-  if (!DEM_on && !DDM_on)
+  for (int j=0; j<Nz; j++)
   {
-   double T0=p1[1];
+   double *p=Parms+j*InSize;
+   double *p1=Parms1+j*InSize1;
 
-   if (T0<1e5)
+   for (int i=0; i<=7; i++) p[i]=p1[i]; //parameters 0-7 are the same in both functions
+   p[8]=p1[9]; //n_H
+   p[9]=p1[10]; //n_He
+   p[10]=DEM_on_global ? p1[11] : 1; //DEM key
+   p[11]=DDM_on_global ? p1[12] : 1; //DDM key
+   p[12]=p1[13]; //abundance key
+   p[13]=p[14]=0; //Maxwellian distribution only
+
+   int DEM_on=(p[10]==0 && NT>1);
+   int DDM_on=(p[11]==0 && NT>1);
+
+   if (!DEM_on && !DDM_on)
    {
-    double n_p=p1[8];
-    double n_H=p1[9];
+    double T0=p1[1];
 
-    if (n_p==0 && n_H==0)
+    if (T0<1e5)
     {
-     double n0=p1[2];
+     double n_p=p1[8];
+     double n_H=p1[9];
 
-     double n_e, n_He;
+     if (n_p==0 && n_H==0)
+     {
+      double n0=p1[2];
 
-     FindIonizationsSolar(n0, T0, &n_e, &n_H, &n_He);
+      double n_e, n_He;
 
-     p[2]=n_e;
-     p[8]=n_H;
-     p[9]=n_He; 
-    }
-   } //otherwise, if T0=>1e5, n_e (p[2]) has already been assigned equal to n_0(p1[2])
+      FindIonizationsSolar(n0, T0, &n_e, &n_H, &n_He);
+
+      p[2]=n_e;
+      p[8]=n_H;
+      p[9]=n_He; 
+     }
+    } //otherwise, if T0=>1e5, n_e (p[2]) has already been assigned equal to n_0(p1[2])
+   }
   }
- }
-           
- int res=MW_Transfer(Lparms, Rparms, Parms, T_arr, DEM_arr, DDM_arr, RL);
 
- free(Parms);
+  if (argc==7)
+  {
+   double *RL=(double*)argv[6];
+
+   res=MW_Transfer(Lparms, Rparms, Parms, T_arr, DEM_arr, DDM_arr, RL, 0, 0, 0, 0);
+  }
+  else
+  {
+   double *fZ_arr=(double*)argv[6];
+   double *TZ_arr=(double*)argv[7];
+   double *Z_arr=(double*)argv[8];
+   double *RL=(double*)argv[9];
+
+   res=MW_Transfer(Lparms, Rparms, Parms, T_arr, DEM_arr, DDM_arr, RL, 1, fZ_arr, TZ_arr, Z_arr);
+  }
+
+  free(Parms);
+
+ }
+ else
+ {
+  IDLmsg("GET_MW error: incorrect number of parameters in the function call.");
+  res=-1;
+ }
 
  return res;
 }
