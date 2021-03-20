@@ -1,4 +1,4 @@
-Codes for computing the solar gyroresonance and free-free radio emissions; both the isothermal plasma and the sources described by the differential emission and dispersion measures are supported.
+Codes for computing the solar gyroresonance and free-free radio emissions; both the isothermal plasma and the sources described by the differential emission measure (DEM) and differential density metric (DDM) are supported.
 
 Alexey Kuznetsov, February 2021.
 
