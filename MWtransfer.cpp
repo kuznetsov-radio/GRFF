@@ -357,6 +357,7 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
      double kX=kXff+kXen;
      double jO=jOff+jOen;
      double kO=kOff+kOen;
+     //LOGout("%d %d %d %e %e %e %e %e", j, k, i, f[i], jX, kX, jO, kO); //#####
     
      double tauX=-kX*dz;
      double eX=(tauX<700) ? exp(tauX) : 0.0;
