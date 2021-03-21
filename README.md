@@ -6,4 +6,4 @@ The codes are implemented as Windows/Linux libraries callable from IDL (via call
 
 The folder Binaries contains the compiled Windows DLL and Linux SO libraries.
 
-https://zenodo.org/badge/292502263.svg
+[![DOI](https://zenodo.org/badge/292502263.svg)](https://zenodo.org/badge/latestdoi/292502263)
