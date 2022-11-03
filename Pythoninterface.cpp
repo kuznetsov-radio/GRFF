@@ -1,6 +1,6 @@
 #include "IDLinterface.h"
 #include "Messages.h"
-
+#include<stdio.h>
 #ifndef LINUX
 extern "C" __declspec(dllexport) int GET_MW_USER(int argc, void **argv)
 #else
@@ -42,6 +42,5 @@ extern "C" int PyGET_MW(int *Lparms, double *Rparms, double *Parms,
      ARGV[4]=(void*)DEM_arr;
      ARGV[5]=(void*)DDM_arr;
      ARGV[6]=(void*)RL; 
-
      return GET_MW(7, ARGV);
 }
