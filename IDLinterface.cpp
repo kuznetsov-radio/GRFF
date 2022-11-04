@@ -59,7 +59,6 @@ extern "C" int GET_MW(int argc, void **argv)
 #endif
 {
  int res=0;
-
  if (argc==7 || argc==10)
  {
   int *Lparms1=(int*)argv[0];
@@ -267,3 +266,5 @@ extern "C" double FindIonizations(int argc, void **argv)
 
  return *n_e/n0;
 }
+
+

@@ -1,5 +1,5 @@
-GRFF_DEM_Transfer	:	Coulomb.o DEM.o ExtMath.o FF.o getparms.o GR.o IDLinterface.o Messages.o MWtransfer.o Neutrals.o Plasma.o Zeta.o
-				g++ -shared -o GRFF_DEM_Transfer.so Coulomb.o DEM.o ExtMath.o FF.o getparms.o GR.o IDLinterface.o Messages.o MWtransfer.o Neutrals.o Plasma.o Zeta.o
+GRFF_DEM_Transfer	:	Coulomb.o DEM.o ExtMath.o FF.o getparms.o GR.o IDLinterface.o Pythoninterface.o Messages.o MWtransfer.o Neutrals.o Plasma.o Zeta.o
+				g++ -shared -o GRFF_DEM_Transfer.so Coulomb.o DEM.o ExtMath.o FF.o getparms.o GR.o IDLinterface.o Pythoninterface.o Messages.o MWtransfer.o Neutrals.o Plasma.o Zeta.o
 Coulomb.o		:	Coulomb.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h Messages.h MWtransfer.h Neutrals.h Plasma.h Zeta.h
 				g++ -c -O3 -fPIC -D LINUX Coulomb.cpp
 DEM.o			:	DEM.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h Messages.h MWtransfer.h Neutrals.h Plasma.h Zeta.h
@@ -14,6 +14,8 @@ GR.o			:	GR.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h Messages.h MWtransfer.h Neut
 				g++ -c -O3 -fPIC -D LINUX GR.cpp
 IDLinterface.o		:	IDLinterface.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h Messages.h MWtransfer.h Neutrals.h Plasma.h Zeta.h
 				g++ -c -O3 -fPIC -D LINUX IDLinterface.cpp
+Pythoninterface.o	:	Pythoninterface.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h Messages.h IDLinterface.h MWtransfer.h Neutrals.h Plasma.h Zeta.h
+				g++ -c -O3 -fPIC -D LINUX Pythoninterface.cpp					
 Messages.o		:	Messages.cpp
 				g++ -c -O3 -fPIC -D LINUX Messages.cpp
 MWtransfer.o		:	MWtransfer.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h Messages.h MWtransfer.h Neutrals.h Plasma.h Zeta.h
