@@ -10,6 +10,7 @@
 #include "Neutrals.h"
 #include "GR.h"
 #include "Messages.h"
+#include "IDLinterface.h"
 
 typedef struct
 {
@@ -19,13 +20,14 @@ typedef struct
  double dB_dz[2], dtheta_dz[2];
  double n_e, T0;
  double n_H, n_He;
- double dz;
+ double zstart, dz;
  double f_p;
- int DEM_on, DDM_on, FF_on, GR_on, HHe_on, s_max, j_ofs, ABcode, dfcode;
+ int DEM_on, DDM_on, FF_on, GR_on, HHe_on, force_isothermal, s_max, s_min, j_ofs, ABcode, dfcode;
  double kn;
 } Voxel;
 
-void ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_arr, double *DEM_arr, double *DDM_arr, Voxel *V)
+void ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_arr, double *DEM_arr, double *DDM_arr, 
+                   int smin_global, int smax_global, Voxel *V)
 {
  for (int j=0; j<Nz0; j++)
  {
@@ -42,8 +44,10 @@ void ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_ar
   V[j].GR_on=((em_flag & 1)==0);
   V[j].FF_on=((em_flag & 2)==0);
   V[j].HHe_on=((em_flag & 4)==0);
+  V[j].force_isothermal=((em_flag & 8)!=0);
 
-  V[j].s_max=(int)p[7];
+  V[j].s_max=(smax_global>0) ? smax_global : (int)p[7];
+  V[j].s_min=(smin_global>0) ? max(smin_global, 2) : 2;
   V[j].n_H=max(p[8], 0.0); 
   V[j].n_He=max(p[9], 0.0);
 
@@ -69,6 +73,9 @@ void ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_ar
                  
   V[j].f_p=e*sqrt(V[j].n_e/me/M_PI); 
  }
+
+ V[0].zstart=0;
+ for (int j=1; j<Nz0; j++) V[j].zstart=V[j-1].zstart+V[j-1].dz;
 }
 
 void CompressVoxels(Voxel *V, int Nz0, int *Nz)
@@ -164,10 +171,11 @@ void ProcessVoxelGradients(Voxel *V, int Nz)
 typedef struct
 {
  int s; //harmonic number; if <2, then QT layer assumed
+ double zstart; //location of the voxel start
  double z0; //location, relative to the voxel start
 } Level;
 
-void AddLevel(Level **l, int s, double z0, int *Nlev, int *NlevMax)
+void AddLevel(Level **l, int s, double zstart, double z0, int *Nlev, int *NlevMax)
 {
  int old=0;
 
@@ -180,6 +188,7 @@ void AddLevel(Level **l, int s, double z0, int *Nlev, int *NlevMax)
  if (!old)
  {
   (*l)[*Nlev].s=s;
+  (*l)[*Nlev].zstart=zstart;
   (*l)[*Nlev].z0=z0;
   (*Nlev)++;
 
@@ -207,7 +216,7 @@ void SortLevels(Level *l, int Nlev)
 }
 
 int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, double *DEM_arr, double *DDM_arr, double *RL,
-                int AZ_on, double *fZ_arr, double *TZ_arr, double *Z_arr)
+                int AZ_on, double *fZ_arr, double *TZ_arr, double *Z_arr, int *srange, double *GRparms)
 {
  int res=0;
 
@@ -232,6 +241,9 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
   lnfZ_arr=lnTZ_arr=0;
  }
 
+ int smin_global=srange ? srange[0] : 0;
+ int smax_global=srange ? srange[1] : 0;
+
  double Sang=Rparms[0]/(sqr(AU)*sfu);
  
  double *f=(double*)malloc(sizeof(double)*Nf);
@@ -252,7 +264,7 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
 
  Voxel *V=(Voxel*)malloc(sizeof(Voxel)*Nz0);
 
- ProcessVoxels(Nz0, Parms, NT, T_arr, lnT_arr, DEM_arr, DDM_arr, V);
+ ProcessVoxels(Nz0, Parms, NT, T_arr, lnT_arr, DEM_arr, DDM_arr, smin_global, smax_global, V);
 
  int Nz;
  CompressVoxels(V, Nz0, &Nz);
@@ -284,7 +296,7 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
     if (QTfound)
     {
      double z0=-V[j].Bz_b[lr]/V[j].Bz_a[lr];
-     if (z0!=(V[j].dz/2)) AddLevel(&l, 0, z0, &Nlev, &NlevMax); 
+     if (z0!=(V[j].dz/2)) AddLevel(&l, 0, V[j].zstart, z0, &Nlev, &NlevMax); 
     }
    }
 
@@ -297,13 +309,13 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
     {
      int smin=(int)ceil(B_res/max(B1, B2));
      int smax=(int)floor(B_res/min(B1, B2)); 
-     smin=max(smin, 2);
+     smin=max(smin, V[j].s_min);
      smax=min(smax, V[j].s_max);
 
      for (int s=smin; s<=smax; s++)
      {
       double z0=(B_res/s-V[j].B_b[lr])/V[j].B_a[lr];
-      if (z0!=(V[j].dz/2)) AddLevel(&l, s, z0, &Nlev, &NlevMax); 
+      if (z0!=(V[j].dz/2)) AddLevel(&l, s, V[j].zstart, z0, &Nlev, &NlevMax); 
      }
     }
    }
@@ -333,8 +345,9 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
 
      if (V[j].FF_on)
      {
-      if (V[j].DEM_on) FindFF_DEM_XO(f[i], theta, V[j].f_p, f_B, T_arr, lnT_arr, DEM_arr+NT*V[j].j_ofs, NT, V[j].ABcode, 
-                                     AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jXff, &kXff, &jOff, &kOff);
+      if (V[j].DEM_on && !V[j].force_isothermal) 
+       FindFF_DEM_XO(f[i], theta, V[j].f_p, f_B, T_arr, lnT_arr, DEM_arr+NT*V[j].j_ofs, NT, V[j].ABcode, 
+                     AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jXff, &kXff, &jOff, &kOff);
       else
       {
        FindFF_single(f[i], theta, -1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].ABcode, 
@@ -357,7 +370,6 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
      double kX=kXff+kXen;
      double jO=jOff+jOen;
      double kO=kOff+kOen;
-     //LOGout("%d %d %d %e %e %e %e %e", j, k, i, f[i], jX, kX, jO, kO); //#####
     
      double tauX=-kX*dz;
      double eX=(tauX<700) ? exp(tauX) : 0.0;
@@ -418,12 +430,22 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
       double tauX, tauO, I0X, I0O;
       tauX=tauO=I0X=I0O=0;
 
-      if (V[j].DDM_on) FindGR_DDM_XO(f[i], theta, l[k].s, V[j].f_p, f_B, T_arr, lnT_arr, DDM_arr+NT*V[j].j_ofs, NT, LB, 
-                                     &tauX, &I0X, &tauO, &I0O);
+      if (V[j].DDM_on && !V[j].force_isothermal) 
+       FindGR_DDM_XO(f[i], theta, l[k].s, V[j].f_p, f_B, T_arr, lnT_arr, DDM_arr+NT*V[j].j_ofs, NT, LB, 
+                     &tauX, &I0X, &tauO, &I0O);
       else
       {
        FindGR_single(f[i], theta, -1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, &tauX, &I0X);
        FindGR_single(f[i], theta,  1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, &tauO, &I0O);
+      }
+
+      if (GRparms!=0 && smin_global>0 && smax_global>0 && smax_global>=smin_global)
+      {
+       GRparms[D3(5, Nf, 0, i, l[k].s-smin_global)]=I0X*sqr(c/f[i])/kB;
+       GRparms[D3(5, Nf, 1, i, l[k].s-smin_global)]=tauX;
+       GRparms[D3(5, Nf, 2, i, l[k].s-smin_global)]=I0O*sqr(c/f[i])/kB;
+       GRparms[D3(5, Nf, 3, i, l[k].s-smin_global)]=tauO;
+       GRparms[D3(5, Nf, 4, i, l[k].s-smin_global)]=l[k].zstart+l[k].z0;
       }
 
       double eX=exp(-tauX);

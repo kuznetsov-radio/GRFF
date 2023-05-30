@@ -67,7 +67,7 @@ void FindFF_DEM_XO(double f, double theta, double f_p, double f_B, double *T_arr
     I_j[i]=DEM_arr[i]*lnC1(T_arr[i], f)/sqrt(kB*T_arr[i])*(1.0+zeta)*T_arr[i]; //j, a=1/2
    }
    else I_j[i]=0;
-   I_k[i]=I_j[i]/(kB*T_arr[i]);                                                                                //k, a=3/2
+   I_k[i]=I_j[i]/(kB*T_arr[i]);                                                //k, a=3/2
   }
 
   aj=IntTabulated(lnT_arr, I_j, NT);

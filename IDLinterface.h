@@ -1,7 +1,3 @@
-#ifndef LINUX
-extern "C" __declspec(dllexport) int GET_MW(int argc, void **argv);
-extern "C" __declspec(dllexport) int GET_MW_SLICE(int argc, void **argv);
-#else
-extern "C" double GET_MW(int argc, void **argv);
-extern "C" double GET_MW_SLICE(int argc, void **argv);
-#endif
+#pragma once
+
+#define D3(s1, s2, i1, i2, i3) ((i1)+((i2)+(i3)*(s2))*(s1))
