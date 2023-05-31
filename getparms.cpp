@@ -21,6 +21,13 @@ const char* arr1s[]={
 
 #define N1s 6
 
+const char* arr1h[]={
+ "      s_min;       2   ;int;     data;             Minimum harmonic number",
+ "      s_max;      10   ;int;     data;             Maximum harmonic number"
+};
+
+#define N1h 2
+
 const char* arr2[]={
  "         dS;   1E+18   ;cm^2;    data;                 Source/pixel area",
  "      f_min;   1E+09   ;Hz;      user;  Starting freq. to calc. spectrum",
@@ -49,9 +56,9 @@ const char* arr3[]={
 
 #define N3 15
 
-void WriteParms(const char **arr, const char *fname, int N)
+void WriteParms(const char **arr, const char *fname, int N, int add)
 {
- FILE *F=fopen(fname, "w");
+ FILE *F=fopen(fname, add ? "a" : "w");
  if (F)
  {
   for (int i=0; i<N; i++) fprintf(F, "%s\n", arr[i]);
@@ -65,9 +72,9 @@ extern "C" __declspec(dllexport) float GET_PARMS(int argc, void **argv)
 extern "C" float GET_PARMS(int argc, void **argv)
 #endif
 {
- WriteParms(arr1, "Long_input.txt",  N1);
- WriteParms(arr2, "Real_input.txt",  N2);
- WriteParms(arr3, "Parms_input.txt", N3);
+ WriteParms(arr1, "Long_input.txt",  N1, 0);
+ WriteParms(arr2, "Real_input.txt",  N2, 0);
+ WriteParms(arr3, "Parms_input.txt", N3, 0);
  return 0;
 }
 
@@ -77,8 +84,34 @@ extern "C" __declspec(dllexport) float GET_PARMS_SLICE(int argc, void **argv)
 extern "C" float GET_PARMS_SLICE(int argc, void **argv)
 #endif
 {
- WriteParms(arr1s, "Long_input.txt",  N1s);
- WriteParms(arr2,  "Real_input.txt",  N2);
- WriteParms(arr3,  "Parms_input.txt", N3);
+ WriteParms(arr1s, "Long_input.txt",  N1s, 0);
+ WriteParms(arr2,  "Real_input.txt",  N2, 0);
+ WriteParms(arr3,  "Parms_input.txt", N3, 0);
+ return 0;
+}
+
+#ifndef LINUX
+extern "C" __declspec(dllexport) float GET_PARMS1(int argc, void **argv)
+#else
+extern "C" float GET_PARMS1(int argc, void **argv)
+#endif
+{
+ WriteParms(arr1, "Long_input.txt",  N1, 0);
+ WriteParms(arr1h, "Long_input.txt",  N1h, 1);
+ WriteParms(arr2, "Real_input.txt",  N2, 0);
+ WriteParms(arr3, "Parms_input.txt", N3, 0);
+ return 0;
+}
+
+#ifndef LINUX
+extern "C" __declspec(dllexport) float GET_PARMS1_SLICE(int argc, void **argv)
+#else
+extern "C" float GET_PARMS1_SLICE(int argc, void **argv)
+#endif
+{
+ WriteParms(arr1s, "Long_input.txt",  N1s, 0);
+ WriteParms(arr1h, "Long_input.txt",  N1h, 1);
+ WriteParms(arr2,  "Real_input.txt",  N2, 0);
+ WriteParms(arr3,  "Parms_input.txt", N3, 0);
  return 0;
 }

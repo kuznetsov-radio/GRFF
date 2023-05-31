@@ -274,9 +274,9 @@ extern "C" __declspec(dllexport) int GET_MW1(int argc, void **argv)
 extern "C" int GET_MW1(int argc, void **argv)
 #endif
 {
- if (argc!=9) return -1;
+ if (argc!=8) return -1;
  else
- {
+ { 
   int *Lparms=(int*)argv[0];
   double *Rparms=(double*)argv[1];
   double *Parms1=(double*)argv[2];
@@ -284,9 +284,10 @@ extern "C" int GET_MW1(int argc, void **argv)
   double *DEM_arr=(double*)argv[4];
   double *DDM_arr=(double*)argv[5];
   double *RL=(double*)argv[6];
-  int *srange=(int*)argv[7];
-  double *GRparms=(double*)argv[8];
+  double *GRparms=(double*)argv[7];
   
+  int *srange=Lparms+5;
+    
   #define InSize1 15
 
   int Nz=Lparms[0];
@@ -352,7 +353,7 @@ extern "C" __declspec(dllexport) int GET_MW1_SLICE(int argc, void** argv)
 extern "C" int GET_MW1_SLICE(int argc, void** argv)
 #endif
 {
- if (argc!=9) return -1;
+ if (argc!=8) return -1;
  else
  {
   int *Lparms_M=(int*)argv[0];
@@ -362,9 +363,10 @@ extern "C" int GET_MW1_SLICE(int argc, void** argv)
   double *DEM_arr_M=(double*)argv[4];
   double *DDM_arr_M=(double*)argv[5];
   double *RL_M=(double*)argv[6];
-  int *srange=(int*)argv[7];
-  double *GRparms_M=(double*)argv[8];
+  double *GRparms_M=(double*)argv[7];
 
+  int *srange=Lparms_M+6;
+  
   int Npix=Lparms_M[0];
   int Nz=Lparms_M[1];
   int Nf=Lparms_M[2];
@@ -376,7 +378,7 @@ extern "C" int GET_MW1_SLICE(int argc, void** argv)
 
   concurrency::parallel_for(0, Npix, [&](int pix)
   {
-   void *ARGV[9];
+   void *ARGV[8];
    ARGV[0]=(void*)(Lparms_M+1);
    ARGV[1]=(void*)(Rparms_M+pix*RpSize);
    ARGV[2]=(void*)(Parms_M+pix*Nz*InSize);
@@ -384,10 +386,9 @@ extern "C" int GET_MW1_SLICE(int argc, void** argv)
    ARGV[4]=(void*)(DEM_arr_M+pix*Nz*NT);
    ARGV[5]=(void*)(DDM_arr_M+pix*Nz*NT);
    ARGV[6]=(void*)(RL_M+pix*Nf*OutSize);
-   ARGV[7]=(void*)srange;
-   ARGV[8]=Ns ? (void*)(GRparms_M+pix*GpSize*Nf*Ns) : 0;
+   ARGV[7]=Ns ? (void*)(GRparms_M+pix*GpSize*Nf*Ns) : 0;
 
-   GET_MW1(9, ARGV);
+   GET_MW1(8, ARGV);
   });
 
   #else
@@ -395,7 +396,7 @@ extern "C" int GET_MW1_SLICE(int argc, void** argv)
   #pragma omp parallel for
   for(int pix=0; pix<Npix; pix++)
   {
-   void *ARGV[7];
+   void *ARGV[8];
    ARGV[0]=(void*)(Lparms_M+1);
    ARGV[1]=(void*)(Rparms_M+pix*RpSize);
    ARGV[2]=(void*)(Parms_M+pix*Nz*InSize);
@@ -403,10 +404,9 @@ extern "C" int GET_MW1_SLICE(int argc, void** argv)
    ARGV[4]=(void*)(DEM_arr_M+pix*Nz*NT);
    ARGV[5]=(void*)(DDM_arr_M+pix*Nz*NT);
    ARGV[6]=(void*)(RL_M+pix*Nf*OutSize);
-   ARGV[7]=(void*)srange;
-   ARGV[8]=Ns ? (void*)(GRparms_M+pix*GpSize*Nf*Ns) : 0;
+   ARGV[7]=Ns ? (void*)(GRparms_M+pix*GpSize*Nf*Ns) : 0;
 
-   GET_MW1(9, ARGV);
+   GET_MW1(8, ARGV);
   }
 
   #endif

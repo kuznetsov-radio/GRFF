@@ -441,10 +441,10 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
 
       if (GRparms!=0 && smin_global>0 && smax_global>0 && smax_global>=smin_global)
       {
-       GRparms[D3(5, Nf, 0, i, l[k].s-smin_global)]=I0X*sqr(c/f[i])/kB;
-       GRparms[D3(5, Nf, 1, i, l[k].s-smin_global)]=tauX;
-       GRparms[D3(5, Nf, 2, i, l[k].s-smin_global)]=I0O*sqr(c/f[i])/kB;
-       GRparms[D3(5, Nf, 3, i, l[k].s-smin_global)]=tauO;
+       GRparms[D3(5, Nf, 0, i, l[k].s-smin_global)]=((theta>(M_PI/2)) ? I0X : I0O)*sqr(c/f[i])/kB; //T_L
+       GRparms[D3(5, Nf, 1, i, l[k].s-smin_global)]=(theta>(M_PI/2)) ? tauX : tauO; //tau_L
+       GRparms[D3(5, Nf, 2, i, l[k].s-smin_global)]=((theta>(M_PI/2)) ? I0O : I0X)*sqr(c/f[i])/kB; //T_R
+       GRparms[D3(5, Nf, 3, i, l[k].s-smin_global)]=(theta>(M_PI/2)) ? tauO : tauX; //tau_R
        GRparms[D3(5, Nf, 4, i, l[k].s-smin_global)]=l[k].zstart+l[k].z0;
       }
 
