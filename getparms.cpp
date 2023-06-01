@@ -22,8 +22,8 @@ const char* arr1s[]={
 #define N1s 6
 
 const char* arr1h[]={
- "      s_min;       2   ;int;     data;             Minimum harmonic number",
- "      s_max;      10   ;int;     data;             Maximum harmonic number"
+ "      s_min;       2   ;int;     user;             Minimum harmonic number",
+ "      s_max;      10   ;int;     user;             Maximum harmonic number"
 };
 
 #define N1h 2
@@ -45,6 +45,24 @@ const char* arr3[]={
  "        phi;     0.0   ;degrees; data;                   Azimuthal angle",
  "  mech_flag;       0   ;none;    data;           Emission mechanism flag",
  "      s_max;      10   ;int;     data;           Maximum harmonic number",
+ "        n_p;       0   ;cm^{-3}; data;              Proton concentration",
+ "       n_HI;       0   ;cm^{-3}; data;    Neutral hydrogen concentration",
+ "      n_HeI;       0   ;cm^{-3}; data;      Neutral helium concentration",
+ "DEM_key_loc;       0   ;0/1;     data;                        DEM on/off",
+ "DDM_key_loc;       0   ;0/1;     data;                        DDM on/off",
+ "  abund_key;       0   ;0/1/2;   data;          Coronal / Caffau / Scott",
+ "    VoxelID;       0   ;int;     data;                          Voxel ID"
+};
+
+const char* arr3h[]={
+ "         dR;   1E+09   ;cm;      data;                Source/voxel depth",
+ "        T_0;   1E+06   ;K;       data;                Plasma temperature",
+ "        n_0;   1E+09   ;cm^{-3}; data;     Electron or total gas density",
+ "          B;   200.0   ;G;       data;                    Magnetic field",
+ "      theta;    60.0   ;degrees; data;                     Viewing angle",
+ "        phi;     0.0   ;degrees; data;                   Azimuthal angle",
+ "  mech_flag;       0   ;none;    data;           Emission mechanism flag",
+ "     unused;      10   ;int;     data;                            unused",
  "        n_p;       0   ;cm^{-3}; data;              Proton concentration",
  "       n_HI;       0   ;cm^{-3}; data;    Neutral hydrogen concentration",
  "      n_HeI;       0   ;cm^{-3}; data;      Neutral helium concentration",
@@ -99,7 +117,7 @@ extern "C" float GET_PARMS1(int argc, void **argv)
  WriteParms(arr1, "Long_input.txt",  N1, 0);
  WriteParms(arr1h, "Long_input.txt",  N1h, 1);
  WriteParms(arr2, "Real_input.txt",  N2, 0);
- WriteParms(arr3, "Parms_input.txt", N3, 0);
+ WriteParms(arr3h, "Parms_input.txt", N3, 0);
  return 0;
 }
 
@@ -112,6 +130,6 @@ extern "C" float GET_PARMS1_SLICE(int argc, void **argv)
  WriteParms(arr1s, "Long_input.txt",  N1s, 0);
  WriteParms(arr1h, "Long_input.txt",  N1h, 1);
  WriteParms(arr2,  "Real_input.txt",  N2, 0);
- WriteParms(arr3,  "Parms_input.txt", N3, 0);
+ WriteParms(arr3h,  "Parms_input.txt", N3, 0);
  return 0;
 }
