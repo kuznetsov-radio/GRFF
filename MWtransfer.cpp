@@ -20,7 +20,7 @@ typedef struct
  double dB_dz[2], dtheta_dz[2];
  double n_e, T0;
  double n_H, n_He;
- double zstart, dz;
+ double zstart, zstart1, dz;
  double f_p;
  int DEM_on, DDM_on, FF_on, GR_on, HHe_on, force_isothermal, s_max, s_min, j_ofs, ABcode, dfcode;
  double kn;
@@ -74,8 +74,12 @@ void ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_ar
   V[j].f_p=e*sqrt(V[j].n_e/me/M_PI); 
  }
 
- V[0].zstart=0;
- for (int j=1; j<Nz0; j++) V[j].zstart=V[j-1].zstart+V[j-1].dz;
+ V[0].zstart=V[0].zstart1=0;
+ for (int j=1; j<Nz0; j++) 
+ {
+  V[j].zstart=V[j-1].zstart+V[j-1].dz;
+  V[j].zstart1=V[j-1].zstart1+((V[j-1].n_e>0) ? V[j-1].dz : 0);
+ }
 }
 
 void CompressVoxels(Voxel *V, int Nz0, int *Nz)
@@ -171,11 +175,11 @@ void ProcessVoxelGradients(Voxel *V, int Nz)
 typedef struct
 {
  int s; //harmonic number; if <2, then QT layer assumed
- double zstart; //location of the voxel start
+ double zstart, zstart1; //location of the voxel start
  double z0; //location, relative to the voxel start
 } Level;
 
-void AddLevel(Level **l, int s, double zstart, double z0, int *Nlev, int *NlevMax)
+void AddLevel(Level **l, int s, double zstart, double zstart1, double z0, int *Nlev, int *NlevMax)
 {
  int old=0;
 
@@ -189,6 +193,7 @@ void AddLevel(Level **l, int s, double zstart, double z0, int *Nlev, int *NlevMa
  {
   (*l)[*Nlev].s=s;
   (*l)[*Nlev].zstart=zstart;
+  (*l)[*Nlev].zstart1=zstart1;
   (*l)[*Nlev].z0=z0;
   (*Nlev)++;
 
@@ -296,7 +301,7 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
     if (QTfound)
     {
      double z0=-V[j].Bz_b[lr]/V[j].Bz_a[lr];
-     if (z0!=(V[j].dz/2)) AddLevel(&l, 0, V[j].zstart, z0, &Nlev, &NlevMax); 
+     if (z0!=(V[j].dz/2)) AddLevel(&l, 0, V[j].zstart, V[j].zstart1, z0, &Nlev, &NlevMax); 
     }
    }
 
@@ -315,7 +320,7 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
      for (int s=smin; s<=smax; s++)
      {
       double z0=(B_res/s-V[j].B_b[lr])/V[j].B_a[lr];
-      if (z0!=(V[j].dz/2)) AddLevel(&l, s, V[j].zstart, z0, &Nlev, &NlevMax); 
+      if (z0!=(V[j].dz/2)) AddLevel(&l, s, V[j].zstart, V[j].zstart1, z0, &Nlev, &NlevMax); 
      }
     }
    }
@@ -441,11 +446,12 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
 
       if (GRparms!=0 && smin_global>0 && smax_global>0 && smax_global>=smin_global)
       {
-       GRparms[D3(5, Nf, 0, i, l[k].s-smin_global)]=((theta>(M_PI/2)) ? I0X : I0O)*sqr(c/f[i])/kB; //T_L
-       GRparms[D3(5, Nf, 1, i, l[k].s-smin_global)]=(theta>(M_PI/2)) ? tauX : tauO; //tau_L
-       GRparms[D3(5, Nf, 2, i, l[k].s-smin_global)]=((theta>(M_PI/2)) ? I0O : I0X)*sqr(c/f[i])/kB; //T_R
-       GRparms[D3(5, Nf, 3, i, l[k].s-smin_global)]=(theta>(M_PI/2)) ? tauO : tauX; //tau_R
-       GRparms[D3(5, Nf, 4, i, l[k].s-smin_global)]=l[k].zstart+l[k].z0;
+       GRparms[D3(GpSize, Nf, 0, i, l[k].s-smin_global)]=((theta>(M_PI/2)) ? I0X : I0O)*sqr(c/f[i])/kB; //T_L
+       GRparms[D3(GpSize, Nf, 1, i, l[k].s-smin_global)]=(theta>(M_PI/2)) ? tauX : tauO; //tau_L
+       GRparms[D3(GpSize, Nf, 2, i, l[k].s-smin_global)]=((theta>(M_PI/2)) ? I0O : I0X)*sqr(c/f[i])/kB; //T_R
+       GRparms[D3(GpSize, Nf, 3, i, l[k].s-smin_global)]=(theta>(M_PI/2)) ? tauO : tauX; //tau_R
+       GRparms[D3(GpSize, Nf, 4, i, l[k].s-smin_global)]=l[k].zstart+l[k].z0;
+       GRparms[D3(GpSize, Nf, 5, i, l[k].s-smin_global)]=l[k].zstart1+l[k].z0;
       }
 
       double eX=exp(-tauX);
