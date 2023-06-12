@@ -380,7 +380,7 @@ extern "C" int GET_MW1_SLICE(int argc, void** argv)
   {
    void *ARGV[8];
    ARGV[0]=(void*)(Lparms_M+1);
-   ARGV[1]=(void*)(Rparms_M+pix*RpSize);
+   ARGV[1]=(void*)(Rparms_M+pix*RpSize1);
    ARGV[2]=(void*)(Parms_M+pix*Nz*InSize);
    ARGV[3]=(void*)T_arr;
    ARGV[4]=(void*)(DEM_arr_M+pix*Nz*NT);
@@ -398,7 +398,7 @@ extern "C" int GET_MW1_SLICE(int argc, void** argv)
   {
    void *ARGV[8];
    ARGV[0]=(void*)(Lparms_M+1);
-   ARGV[1]=(void*)(Rparms_M+pix*RpSize);
+   ARGV[1]=(void*)(Rparms_M+pix*RpSize1);
    ARGV[2]=(void*)(Parms_M+pix*Nz*InSize);
    ARGV[3]=(void*)T_arr;
    ARGV[4]=(void*)(DEM_arr_M+pix*Nz*NT);

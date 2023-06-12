@@ -26,8 +26,8 @@ typedef struct
  double kn;
 } Voxel;
 
-void ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_arr, double *DEM_arr, double *DDM_arr, 
-                   int smin_global, int smax_global, Voxel *V)
+double ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_arr, double *DEM_arr, double *DDM_arr, 
+                     int smin_global, int smax_global, Voxel *V)
 {
  for (int j=0; j<Nz0; j++)
  {
@@ -80,6 +80,11 @@ void ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_ar
   V[j].zstart=V[j-1].zstart+V[j-1].dz;
   V[j].zstart1=V[j-1].zstart1+((V[j-1].n_e>0) ? V[j-1].dz : 0);
  }
+
+ double LLOS=0;
+ for (int j=0; j<Nz0; j++) LLOS+=V[j].dz;
+
+ return LLOS;
 }
 
 void CompressVoxels(Voxel *V, int Nz0, int *Nz)
@@ -249,6 +254,19 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
  int smin_global=srange ? srange[0] : 0;
  int smax_global=srange ? srange[1] : 0;
 
+ double x_start, y_start, z_start, x_end, y_end, z_end;
+ x_start=y_start=z_start=x_end=y_end=z_end=0;
+
+ if (GRparms!=0 && smin_global>0 && smax_global>0 && smax_global>=smin_global)
+ {
+  x_start=Rparms[3];
+  y_start=Rparms[4];
+  z_start=Rparms[5];
+  x_end=Rparms[6];
+  y_end=Rparms[7];
+  z_end=Rparms[8];
+ }
+
  double Sang=Rparms[0]/(sqr(AU)*sfu);
  
  double *f=(double*)malloc(sizeof(double)*Nf);
@@ -269,7 +287,7 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
 
  Voxel *V=(Voxel*)malloc(sizeof(Voxel)*Nz0);
 
- ProcessVoxels(Nz0, Parms, NT, T_arr, lnT_arr, DEM_arr, DDM_arr, smin_global, smax_global, V);
+ double LLOS=ProcessVoxels(Nz0, Parms, NT, T_arr, lnT_arr, DEM_arr, DDM_arr, smin_global, smax_global, V);
 
  int Nz;
  CompressVoxels(V, Nz0, &Nz);
@@ -450,8 +468,11 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
        GRparms[D3(GpSize, Nf, 1, i, l[k].s-smin_global)]=(theta>(M_PI/2)) ? tauX : tauO; //tau_L
        GRparms[D3(GpSize, Nf, 2, i, l[k].s-smin_global)]=((theta>(M_PI/2)) ? I0O : I0X)*sqr(c/f[i])/kB; //T_R
        GRparms[D3(GpSize, Nf, 3, i, l[k].s-smin_global)]=(theta>(M_PI/2)) ? tauO : tauX; //tau_R
-       GRparms[D3(GpSize, Nf, 4, i, l[k].s-smin_global)]=l[k].zstart+l[k].z0;
-       GRparms[D3(GpSize, Nf, 5, i, l[k].s-smin_global)]=l[k].zstart1+l[k].z0;
+
+       double lx=l[k].zstart+l[k].z0;
+       GRparms[D3(GpSize, Nf, 4, i, l[k].s-smin_global)]=x_start+(x_end-x_start)*lx/LLOS;
+       GRparms[D3(GpSize, Nf, 5, i, l[k].s-smin_global)]=y_start+(y_end-y_start)*lx/LLOS;
+       GRparms[D3(GpSize, Nf, 6, i, l[k].s-smin_global)]=z_start+(z_end-z_start)*lx/LLOS;
       }
 
       double eX=exp(-tauX);

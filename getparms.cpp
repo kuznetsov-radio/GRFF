@@ -36,6 +36,17 @@ const char* arr2[]={
 
 #define N2 3
 
+const char* arr2h[]={
+ "    x_start;       0   ;cm;      data;                     LOS start (x)",
+ "    y_start;       0   ;cm;      data;                     LOS start (y)",
+ "    z_start;       0   ;cm;      data;                     LOS start (z)",
+ "      x_end;       1   ;cm;      data;                       LOS end (x)",
+ "      y_end;       1   ;cm;      data;                       LOS end (y)",
+ "      z_end;       1   ;cm;      data;                       LOS end (z)"
+};
+
+#define N2h 6
+
 const char* arr3[]={
  "         dR;   1E+09   ;cm;      data;                Source/voxel depth",
  "        T_0;   1E+06   ;K;       data;                Plasma temperature",
@@ -117,6 +128,7 @@ extern "C" float GET_PARMS1(int argc, void **argv)
  WriteParms(arr1, "Long_input.txt",  N1, 0);
  WriteParms(arr1h, "Long_input.txt",  N1h, 1);
  WriteParms(arr2, "Real_input.txt",  N2, 0);
+ WriteParms(arr2h, "Real_input.txt",  N2h, 1);
  WriteParms(arr3h, "Parms_input.txt", N3, 0);
  return 0;
 }
@@ -130,6 +142,7 @@ extern "C" float GET_PARMS1_SLICE(int argc, void **argv)
  WriteParms(arr1s, "Long_input.txt",  N1s, 0);
  WriteParms(arr1h, "Long_input.txt",  N1h, 1);
  WriteParms(arr2,  "Real_input.txt",  N2, 0);
+ WriteParms(arr2h, "Real_input.txt",  N2h, 1);
  WriteParms(arr3h,  "Parms_input.txt", N3, 0);
  return 0;
 }
