@@ -5,7 +5,6 @@
 #include "Plasma.h"
 #include "Coulomb.h"
 #include "Zeta.h"
-#include "Messages.h"
 
 void FindFF_single(double f, double theta, int sigma, double f_p, double f_B, double T0, double n_e, int ABcode,
                    int AZ_on, int NfZ, int NTZ, double *lnfZ_arr, double *lnTZ_arr, double *Z_arr,

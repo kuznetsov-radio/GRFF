@@ -9,8 +9,7 @@
 #include "FF.h"
 #include "Neutrals.h"
 #include "GR.h"
-#include "Messages.h"
-#include "IDLinterface.h"
+#include "ExtInterface.h"
 
 typedef struct
 {
