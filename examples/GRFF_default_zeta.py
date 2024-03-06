@@ -6,7 +6,7 @@ import h5py
 
 def initGET_MW(libname):
 	"""
-	Python wrapper for fast gyrosynchrotron codes.
+	Python wrapper for the gyroresonance / free-free codes.
 	Identical to GScodes.py in https://github.com/kuznetsov-radio/gyrosynchrotron
 	This is for the single thread version
 	@param libname: path for locating compiled shared library
