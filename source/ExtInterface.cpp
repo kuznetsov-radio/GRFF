@@ -1,4 +1,5 @@
-#include <malloc.h>
+//#include <malloc.h>
+#include <stdlib.h>
 #include "MWtransfer.h"
 #include "Coulomb.h"
 #include "Zeta.h"
