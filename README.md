@@ -7,3 +7,17 @@ The codes are implemented as Windows/Linux libraries callable from IDL (via call
 The folder "binaries" contains the compiled Windows DLL and Linux SO libraries.
 
 [![DOI](https://zenodo.org/badge/292502263.svg)](https://zenodo.org/badge/latestdoi/292502263)
+
+
+#### for MacOS users 
+
+need to install Homebrew first, then
+```bash
+brew install gcc llwv libomp
+
+cd GRFF/source
+
+make
+make install
+make clean
+```
