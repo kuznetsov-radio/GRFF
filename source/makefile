@@ -1,4 +1,4 @@
-CC=gcc-13
+CC=gcc
 FLAGS=-lomp 
 LDFLAGS=-L/opt/homebrew/lib -L/opt/homebrew/opt/llvm/lib
 CPPFLAGS=-I/opt/homebrew/include -I/opt/homebrew/opt/llvm/include
