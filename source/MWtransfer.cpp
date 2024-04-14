@@ -22,7 +22,7 @@ typedef struct
  double zstart, zstart1, dz;
  double f_p;
  int DEM_on, DDM_on, FF_on, GR_on, HHe_on, force_isothermal, s_max, s_min, j_ofs, ABcode, dfcode;
- double kn;
+ double S, refTerm;
 } Voxel;
 
 double ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_arr, double *DEM_arr, double *DDM_arr, 
@@ -59,7 +59,7 @@ double ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_
   V[j].dfcode=(int)p[13];
   if (V[j].dfcode<0 || V[j].dfcode>2) V[j].dfcode=0;
 
-  V[j].kn=p[14]; //probably, has to be checked for correct values
+  V[j].S=p[14];
 
   V[j].j_ofs=j;
 
@@ -103,7 +103,7 @@ void CompressVoxels(Voxel *V, int Nz0, int *Nz)
  }
 }
 
-void ProcessVoxelGradients(Voxel *V, int Nz)
+void ProcessVoxelGradients(Voxel *V, int Nz, int ref_on)
 {
  for (int j=0; j<Nz; j++)
  {
@@ -174,6 +174,19 @@ void ProcessVoxelGradients(Voxel *V, int Nz)
    V[j].Bz2=V[j].Bz_a[1]*V[j].dz+V[j].Bz_b[1];
   }
  }
+
+ if (ref_on)
+ {
+  if (Nz==1) V[0].refTerm=0;
+  else
+  {
+   V[0].refTerm=(V[1].S-V[0].S)/(V[0].dz+V[1].dz)*2/V[0].S;
+   V[Nz-1].refTerm=(V[Nz-1].S-V[Nz-2].S)/(V[Nz-2].dz+V[Nz-1].dz)*2/V[Nz-1].S;
+
+   for (int i=1; i<(Nz-1); i++) V[i].refTerm=(V[i+1].S-V[i-1].S)/(V[i].dz+(V[i-1].dz+V[i+1].dz)/2)/V[i].S;
+  }
+ }
+ else for (int i=0; i<Nz; i++) V[i].refTerm=0;
 }
 
 typedef struct
@@ -266,8 +279,6 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
   z_end=Rparms[8];
  }
 
- double Sang=Rparms[0]/(sqr(AU)*sfu);
- 
  double *f=(double*)malloc(sizeof(double)*Nf);
  if (Rparms[1]>0)
  {
@@ -291,19 +302,30 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
  int Nz;
  CompressVoxels(V, Nz0, &Nz);
 
- ProcessVoxelGradients(V, Nz);
+ int ref_on=(Nz>0);
+ for (int i=0; i<Nz; i++) if (V[i].S<=0) ref_on=0;
+
+ ProcessVoxelGradients(V, Nz, ref_on);
+
+ double Sang1, Sang2;
+ Sang1=Sang2=Rparms[0]/(sqr(AU)*sfu);
+ if (ref_on)
+ {
+  Sang1=V[0].S/(sqr(AU)*sfu);
+  Sang2=V[Nz-1].S/(sqr(AU)*sfu);
+ }
 
  int NlevMax=10;
  Level *l=(Level*)malloc(sizeof(Level)*NlevMax);
 
  for (int i=0; i<Nf; i++)
  {
-  double Lw=RL[i*OutSize+1]/Sang;
-  double Rw=RL[i*OutSize+2]/Sang;
-  double Ls=RL[i*OutSize+3]/Sang;
-  double Rs=RL[i*OutSize+4]/Sang;
-  double Le=RL[i*OutSize+5]/Sang;
-  double Re=RL[i*OutSize+6]/Sang;
+  double Lw=RL[i*OutSize+1]/Sang1;
+  double Rw=RL[i*OutSize+2]/Sang1;
+  double Ls=RL[i*OutSize+3]/Sang1;
+  double Rs=RL[i*OutSize+4]/Sang1;
+  double Le=RL[i*OutSize+5]/Sang1;
+  double Re=RL[i*OutSize+6]/Sang1;
 
   double B_res=f[i]*2*M_PI*me*c/e;
 
@@ -389,9 +411,9 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
      }
 
      double jX=jXff+jXen;
-     double kX=kXff+kXen;
+     double kX=kXff+kXen+V[j].refTerm;
      double jO=jOff+jOen;
-     double kO=kOff+kOen;
+     double kO=kOff+kOen+V[j].refTerm;
     
      double tauX=-kX*dz;
      double eX=(tauX<700) ? exp(tauX) : 0.0;
@@ -503,12 +525,12 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
   }
 
   RL[i*OutSize]=f[i]/1e9;
-  RL[i*OutSize+1]=Lw*Sang;
-  RL[i*OutSize+2]=Rw*Sang;
-  RL[i*OutSize+3]=Ls*Sang;
-  RL[i*OutSize+4]=Rs*Sang;
-  RL[i*OutSize+5]=Le*Sang;
-  RL[i*OutSize+6]=Re*Sang;
+  RL[i*OutSize+1]=Lw*Sang2;
+  RL[i*OutSize+2]=Rw*Sang2;
+  RL[i*OutSize+3]=Ls*Sang2;
+  RL[i*OutSize+4]=Rs*Sang2;
+  RL[i*OutSize+5]=Le*Sang2;
+  RL[i*OutSize+6]=Re*Sang2;
  }
 
  free(l);

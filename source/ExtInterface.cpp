@@ -1,4 +1,3 @@
-//#include <malloc.h>
 #include <stdlib.h>
 #include "MWtransfer.h"
 #include "Coulomb.h"
@@ -90,7 +89,8 @@ extern "C" int GET_MW(int argc, void **argv)
    p[10]=DEM_on_global ? p1[11] : 1; //DEM key
    p[11]=DDM_on_global ? p1[12] : 1; //DDM key
    p[12]=p1[13]; //abundance key
-   p[13]=p[14]=0; //Maxwellian distribution only
+   p[13]=0; //Maxwellian distribution only
+   p[14]=p1[14]; //source area (if nonzero)
 
    int DEM_on=(p[10]==0 && NT>1);
    int DDM_on=(p[11]==0 && NT>1);
@@ -297,7 +297,8 @@ extern "C" int GET_MW1(int argc, void **argv)
    p[10]=DEM_on_global ? p1[11] : 1; //DEM key
    p[11]=DDM_on_global ? p1[12] : 1; //DDM key
    p[12]=p1[13]; //abundance key
-   p[13]=p[14]=0; //Maxwellian distribution only
+   p[13]=0; //Maxwellian distribution only
+   p[14]=p1[14]; //source area (if nonzero)
 
    int DEM_on=(p[10]==0 && NT>1);
    int DDM_on=(p[11]==0 && NT>1);
