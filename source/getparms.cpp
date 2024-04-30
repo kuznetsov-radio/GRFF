@@ -62,7 +62,7 @@ const char* arr3[]={
  "DEM_key_loc;       0   ;0/1;     data;                        DEM on/off",
  "DDM_key_loc;       0   ;0/1;     data;                        DDM on/off",
  "  abund_key;       0   ;0/1/2;   data;          Coronal / Caffau / Scott",
- "    VoxelID;       0   ;int;     data;                          Voxel ID"
+ "      S_loc;       0   ;cm^2;    data;                 Local source area"
 };
 
 const char* arr3h[]={
