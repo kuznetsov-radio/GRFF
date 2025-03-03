@@ -126,3 +126,22 @@ double LogFactorial(int n)
 
  return (n<Nmax) ? a[n] : gammln(n+1.0);
 }
+
+int value_locate_M(float *a, int n, int k, double x)
+{
+ int asc=a[(n-1)*k]>a[0*k];
+
+ if (asc ? x<a[0*k] : x>a[0*k]) return -1;
+ if (asc ? x>=a[(n-1)*k] : x<=a[(n-1)*k]) return n-1;
+
+ int j, j1, l;
+ j=0; 
+ j1=n-1; 
+ while (j1-j>1) 
+ { 
+  l=(j+j1)>>1; 
+  if (asc ? a[l*k]>x : a[l*k]<x) j1=l; 
+  else j=l; 
+ } 
+ return j;
+} 

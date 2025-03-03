@@ -173,6 +173,7 @@
     <ClCompile Include="FF.cpp" />
     <ClCompile Include="getparms.cpp" />
     <ClCompile Include="GR.cpp" />
+    <ClCompile Include="GXcode.cpp" />
     <ClCompile Include="MWtransfer.cpp" />
     <ClCompile Include="Neutrals.cpp" />
     <ClCompile Include="Plasma.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="ExtMath.h" />
     <ClInclude Include="FF.h" />
     <ClInclude Include="GR.h" />
+    <ClInclude Include="GXcode.h" />
     <ClInclude Include="MWtransfer.h" />
     <ClInclude Include="Neutrals.h" />
     <ClInclude Include="Plasma.h" />

@@ -43,3 +43,5 @@ double InterpolateBilinear(double *arr, double i1, double i2, int N1, int N2, do
 double InterpolBilinear(double *arr, double *x1arr, double *x2arr, double x1, double x2, int N1, int N2);
 
 double LogFactorial(int n);
+
+int value_locate_M(float *a, int n, int k, double x);

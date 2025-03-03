@@ -1,5 +1,6 @@
 #pragma once
 
+#define LpSize 5
 #define InSize 15
 #define OutSize 7
 #define RpSize 3
