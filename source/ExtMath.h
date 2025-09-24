@@ -30,7 +30,7 @@ inline double sign(double x)
  return (x<0.0) ? -1.0 : 1.0;
 }
 
-#define dNaN (double(HUGE_VAL))
+#define dNaN (double(NAN))
 
 #ifndef LINUX
 #define finite _finite
