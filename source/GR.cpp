@@ -3,9 +3,11 @@
 #include <stdlib.h>
 #include "ExtMath.h"
 #include "Plasma.h"
+#include "RFactorKappa.h"
+#include "RFactorN.h"
 
-void FindGR_single(double f, double theta, int sigma, int s, double f_p, double f_B, double n_e, double T0, double LB, 
-	               double *tau, double *I0)
+void FindGR_Maxwell(double f, double theta, int sigma, int s, double f_p, double f_B, double n_e, double T0, double LB, 
+	                double *tau, double *I0)
 {
  double N, L, T, st, ct;
 
@@ -22,6 +24,73 @@ void FindGR_single(double f, double theta, int sigma, int s, double f_p, double 
    double lnQ=log(kB*T0/me/c/c*sqr(s*N*st)/2)*(s-1);
    *tau=exp(lnQ-LogFactorial(s))*M_PI*e*e*n_e/(f*me*c)*s*s/N*LB*sqr(T*ct+L*st+1.0)/(1.0+sqr(T));
    *I0=kB*T0*sqr(f*N/c);
+  }
+ }
+ else
+ {
+  *tau=1e100;
+  *I0=0.0;
+ }
+}
+
+void FindGR_kappa(double f, double theta, int sigma, int s, double f_p, double f_B, double n_e, double T0, double LB, double kappa,
+	              double *tau, double *I0)
+{
+ double N, L, T, st, ct;
+
+ FindPlasmaDispersion(f, f_p, f_B, theta, sigma, &N, 0, &L, &T, &st, &ct); 
+ if (finite(N))
+ {
+  if (f_p<=0 || T0<=0)
+  {
+   *tau=0.0;
+   *I0=0.0;
+  }
+  else
+  {
+   double beta=sqrt(kB*T0/me)/c;
+   double slna=log((kappa-1.5)*sqr(beta*N*st*s)/2)*(s-1);
+   *tau=sqr(M_PI)/c*sqr(f_p/f*s)*f*LB/N/(1.0+sqr(T))*sqr(T*ct+L*st+1.0)*
+	    exp(slna-LogFactorial(s))*Gamma(kappa-s+0.5)/Gamma(kappa-0.5);
+   *I0=sqr(f*N/c)*kB*fabs(T0)*(kappa-1.5)/(kappa-s-0.5);
+   *I0*=RFactorKappaApprox(*tau, kappa-s);
+  }
+ }
+ else
+ {
+  *tau=1e100;
+  *I0=0.0;
+ }
+}
+
+void FindGR_n(double f, double theta, int sigma, int s, double f_p, double f_B, double n_e, double T0, double LB, int k,
+	          double *tau, double *I0)
+{
+ double N, L, T, st, ct;
+
+ FindPlasmaDispersion(f, f_p, f_B, theta, sigma, &N, 0, &L, &T, &st, &ct); 
+ if (finite(N))
+ {
+  if (f_p<=0 || T0<=0)
+  {
+   *tau=0.0;
+   *I0=0.0;
+  }
+  else
+  {
+   double beta=sqrt(kB*T0/me)/c;
+   double slna=log(sqr(beta*N*st*s)/2)*s;
+   *tau=sqr(M_PI)*sqrt(M_PI)/c*sqr(f_p/f)/Gamma(1.5+k)*Gamma(0.5+s+k)/Gamma(0.5+s)*
+	    f*LB/N/(1.0+sqr(T))/sqr(beta*N*st)*sqr(T*ct+L*st+1.0)*exp(slna-LogFactorial(s));
+   *I0=sqr(f*N/c)*kB*fabs(T0)*(0.5+s+k)/(0.5+s);
+
+   double R=RFactorNApprox(*tau, s, k);
+   if (!finite(R))
+   {
+    *tau=0;
+    *I0=0;
+   }
+   else *I0*=R;
   }
  }
  else

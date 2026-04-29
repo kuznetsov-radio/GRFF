@@ -87,10 +87,12 @@ const char* arr3[]={
  "DEM_key_loc;       0   ;0/1;     data;                        DEM on/off",
  "DDM_key_loc;       0   ;0/1;     data;                        DDM on/off",
  "  abund_key;       0   ;0/1/2;   data;          Coronal / Caffau / Scott",
- "      S_loc;       0   ;cm^2;    data;                 Local source area"
+ "      S_loc;       0   ;cm^2;    data;                 Local source area",
+ "     Dist_E;       0   ;0/1/2;   data;            Maxwellian / kappa / n",
+ "      kappa;       0   ;none;    data; Index of kappa- or n-distribution"
 };
 
-#define N3 15
+#define N3 17
 
 const char* arr3_harmonics[]={
  "         dR;   1E+09   ;cm;      data;                Source/voxel depth",
@@ -107,10 +109,12 @@ const char* arr3_harmonics[]={
  "DEM_key_loc;       0   ;0/1;     data;                        DEM on/off",
  "DDM_key_loc;       0   ;0/1;     data;                        DDM on/off",
  "  abund_key;       0   ;0/1/2;   data;          Coronal / Caffau / Scott",
- "      S_loc;       0   ;cm^2;    data;                 Local source area"
+ "      S_loc;       0   ;cm^2;    data;                 Local source area",
+ "     Dist_E;       0   ;0/1/2;   data;            Maxwellian / kappa / n",
+ "      kappa;       0   ;none;    data; Index of kappa- or n-distribution"
 };
 
-#define N3_harmonics 15
+#define N3_harmonics 17
 
 const char* arr3_GX[]={
  "         dR;   1E+09   ;cm;      data;                Source/voxel depth",
@@ -127,10 +131,12 @@ const char* arr3_GX[]={
  "          Q;       0   ;relative;data;                      Heating rate",
  "          L;       0   ;cm;      data;                       Loop length",
  "  abund_key;       0   ;0/1/2;   data;          Coronal / Caffau / Scott",
- "      S_loc;       0   ;cm^2;    data;                 Local source area"
+ "      S_loc;       0   ;cm^2;    data;                 Local source area",
+ "     Dist_E;       0   ;0/1/2;   data;            Maxwellian / kappa / n",
+ "      kappa;       0   ;none;    data; Index of kappa- or n-distribution"
 };
 
-#define N3_GX 15
+#define N3_GX 17
 
 void WriteParms(const char **arr, const char *fname, int N, int add)
 {

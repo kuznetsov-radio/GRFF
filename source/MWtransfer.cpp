@@ -10,6 +10,7 @@
 #include "Neutrals.h"
 #include "GR.h"
 #include "ExtInterface.h"
+#include "RFactorN.h"
 
 typedef struct
 {
@@ -23,6 +24,7 @@ typedef struct
  double f_p;
  int DEM_on, DDM_on, FF_on, GR_on, HHe_on, force_isothermal, s_max, s_min, j_ofs, ABcode, dfcode;
  double S, refTerm;
+ double kappa_n;
 } Voxel;
 
 double ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_arr, double *DEM_arr, double *DDM_arr, 
@@ -30,7 +32,7 @@ double ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_
 {
  for (int j=0; j<Nz0; j++)
  {
-  double *p=Parms+j*InSize;
+  double *p=Parms+j*InSize_int;
 
   V[j].dz=max(p[0], 0.0);
   V[j].T0=max(p[1], 0.0);
@@ -60,6 +62,8 @@ double ProcessVoxels(int Nz0, double *Parms, int NT, double *T_arr, double *lnT_
   if (V[j].dfcode<0 || V[j].dfcode>2) V[j].dfcode=0;
 
   V[j].S=p[14];
+
+  V[j].kappa_n=p[15];
 
   V[j].j_ofs=j;
 
@@ -356,6 +360,14 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
      smin=max(smin, V[j].s_min);
      smax=min(smax, V[j].s_max);
 
+     if (V[j].dfcode==1) smax=min(smax, int(V[j].kappa_n-0.6)); //kappa
+
+     if (V[j].dfcode==2) //n
+     {
+      smin=max(smin, 2);
+      smax=min(smax, max_s_n);
+     }
+
      for (int s=smin; s<=smax; s++)
      {
       double z0=(B_res/s-V[j].B_b[lr])/V[j].B_a[lr];
@@ -392,12 +404,25 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
       if (V[j].DEM_on && !V[j].force_isothermal) 
        FindFF_DEM_XO(f[i], theta, V[j].f_p, f_B, T_arr, lnT_arr, DEM_arr+NT*V[j].j_ofs, NT, V[j].ABcode, 
                      AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jXff, &kXff, &jOff, &kOff);
-      else
+      else switch(V[j].dfcode)
       {
-       FindFF_single(f[i], theta, -1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].ABcode, 
+       case 1: //kappa
+        FindFF_kappa(f[i], theta, -1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].kappa_n, V[j].ABcode, 
                      AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jXff, &kXff);
-       FindFF_single(f[i], theta,  1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].ABcode, 
-                     AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jOff, &kOff); 
+        FindFF_kappa(f[i], theta,  1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].kappa_n, V[j].ABcode, 
+                     AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jOff, &kOff);         
+        break;
+       case 2: //n
+        FindFF_n(f[i], theta, -1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].kappa_n, V[j].ABcode, 
+                 AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jXff, &kXff);
+        FindFF_n(f[i], theta,  1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].kappa_n, V[j].ABcode, 
+                 AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jOff, &kOff);         
+        break;
+       default: //Maxwellian
+        FindFF_Maxwell(f[i], theta, -1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].ABcode, 
+                       AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jXff, &kXff);
+        FindFF_Maxwell(f[i], theta,  1, V[j].f_p, f_B, V[j].T0, V[j].n_e, V[j].ABcode, 
+                       AZ_on, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr, &jOff, &kOff); 
       }
      }
 
@@ -417,10 +442,10 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
     
      double tauX=-kX*dz;
      double eX=(tauX<700) ? exp(tauX) : 0.0;
-     double dIX=(kX==0.0 || tauX>700) ? 0.0 : jX/kX*((1.0-eX) ? 1.0-eX : -tauX);
+     double dIX=(tauX>700) ? 0.0 : ((kX==0.0) ? jX*dz : jX/kX*((1.0-eX) ? 1.0-eX : -tauX));
      double tauO=-kO*dz;
      double eO=(tauO<700) ? exp(tauO) : 0.0; 
-     double dIO=(kO==0.0 || tauO>700) ? 0.0 : jO/kO*((1.0-eO) ? 1.0-eO : -tauO);
+     double dIO=(tauO>700) ? 0.0 : ((kO==0.0) ? jO*dz : jO/kO*((1.0-eO) ? 1.0-eO : -tauO));
      
      if (theta>(M_PI/2))
      {
@@ -477,10 +502,22 @@ int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, doubl
       if (V[j].DDM_on && !V[j].force_isothermal) 
        FindGR_DDM_XO(f[i], theta, l[k].s, V[j].f_p, f_B, T_arr, lnT_arr, DDM_arr+NT*V[j].j_ofs, NT, LB, 
                      &tauX, &I0X, &tauO, &I0O);
-      else
+      else switch(V[j].dfcode)
       {
-       FindGR_single(f[i], theta, -1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, &tauX, &I0X);
-       FindGR_single(f[i], theta,  1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, &tauO, &I0O);
+       case 1: //kappa
+        FindGR_kappa(f[i], theta, -1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, V[j].kappa_n, &tauX, &I0X);
+        FindGR_kappa(f[i], theta,  1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, V[j].kappa_n, &tauO, &I0O);
+        break;
+       case 2: //n
+        {
+         int kn=int(V[j].kappa_n/2);
+         FindGR_n(f[i], theta, -1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, kn, &tauX, &I0X);
+         FindGR_n(f[i], theta,  1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, kn, &tauO, &I0O);
+        }
+        break;
+       default: //Maxwellian
+        FindGR_Maxwell(f[i], theta, -1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, &tauX, &I0X);
+        FindGR_Maxwell(f[i], theta,  1, l[k].s, V[j].f_p, f_B, V[j].n_e, V[j].T0, LB, &tauO, &I0O);
       }
 
       if (GRparms!=0 && smin_global>0 && smax_global>0 && smax_global>=smin_global)

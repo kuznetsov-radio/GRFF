@@ -1,0 +1,1 @@
+double RFactorKappaApprox(double tau, double k);

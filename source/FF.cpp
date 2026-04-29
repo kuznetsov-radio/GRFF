@@ -6,9 +6,9 @@
 #include "Coulomb.h"
 #include "Zeta.h"
 
-void FindFF_single(double f, double theta, int sigma, double f_p, double f_B, double T0, double n_e, int ABcode,
-                   int AZ_on, int NfZ, int NTZ, double *lnfZ_arr, double *lnTZ_arr, double *Z_arr,
-                   double *j, double *k)
+void FindFF_Maxwell(double f, double theta, int sigma, double f_p, double f_B, double T0, double n_e, int ABcode,
+                    int AZ_on, int NfZ, int NTZ, double *lnfZ_arr, double *lnTZ_arr, double *Z_arr,
+                    double *j, double *k)
 {
  double N, FZh;
 
@@ -28,6 +28,78 @@ void FindFF_single(double f, double theta, int sigma, double f_p, double f_B, do
 
    *j=jff*FZh;
    *k=kff*FZh;
+  }
+  else
+  {
+   *j=0.0;
+   *k=0.0;
+  }
+ }
+ else
+ {
+  *j=0.0;
+  *k=1e100;
+ }
+}
+
+void FindFF_kappa(double f, double theta, int sigma, double f_p, double f_B, double T0, double n_e, double kappa, int ABcode,
+                  int AZ_on, int NfZ, int NTZ, double *lnfZ_arr, double *lnTZ_arr, double *Z_arr,
+                  double *j, double *k)
+{
+ double N, FZh;
+
+ FindPlasmaDispersion(f, f_p, f_B, theta, sigma, &N, &FZh, 0, 0, 0, 0); 
+ if (finite(N))
+ {
+  if (n_e>0)
+  {
+   double lnC=lnC1(T0, f);
+   double zeta=(AZ_on) ? Zeta_arbitrary(T0, f, ABcode, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr) :
+                         Zeta_Solar(T0, f, ABcode);
+
+   double Ak=Gamma(kappa+1.0)/Gamma(kappa-0.5)*pow(kappa-1.5, -1.5);
+   double kff=Ak*8.0*sqr(e*e*e)*sqr(n_e)*lnC/
+	          (3.0*sqrt(2.0*M_PI)*N*c*sqr(f)*me*kB*T0*sqrt(me*kB*T0))*
+	          (1.0-0.575*pow(6.0/kappa, 1.1)/lnC)*(1.0+zeta);
+   double jff=Ak*(kappa-1.5)/kappa*8.0*sqr(e*e*e)*N*sqr(n_e)*lnC/
+	          (3.0*sqrt(2.0*M_PI)*mec2*sqrt(mec2)*sqrt(kB*T0))*
+	          (1.0-0.525*pow(4.0/kappa, 1.25)/lnC)*(1.0+zeta);
+
+   *j=jff*FZh;
+   *k=kff*FZh;
+  }
+  else
+  {
+   *j=0.0;
+   *k=0.0;
+  }
+ }
+ else
+ {
+  *j=0.0;
+  *k=1e100;
+ }
+}
+
+void FindFF_n(double f, double theta, int sigma, double f_p, double f_B, double T0, double n_e, double n, int ABcode,
+              int AZ_on, int NfZ, int NTZ, double *lnfZ_arr, double *lnTZ_arr, double *Z_arr,
+              double *j, double *k)
+{
+ double N, FZh;
+
+ FindPlasmaDispersion(f, f_p, f_B, theta, sigma, &N, &FZh, 0, 0, 0, 0); 
+ if (finite(N))
+ {
+  if (n_e>0)
+  {
+   double lnC=lnC1(T0, f);
+   double zeta=(AZ_on) ? Zeta_arbitrary(T0, f, ABcode, NfZ, NTZ, lnfZ_arr, lnTZ_arr, Z_arr) :
+                         Zeta_Solar(T0, f, ABcode);
+
+   double jff=4.0/3/sqrt(2.0)*sqr(e*e*e)/mec2/sqrt(mec2)*N*sqr(n_e)*lnC/sqrt(kB*T0)*Gamma(n/2+0.5)/Gamma(n/2+1.0)*(1.0+zeta);
+
+   *j=jff*FZh;
+   *k=0.0;
   }
   else
   {

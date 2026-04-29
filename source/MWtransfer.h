@@ -1,11 +1,13 @@
 #pragma once
 
 #define LpSize 5
-#define InSize 15
+#define InSize_ext 17
 #define OutSize 7
 #define RpSize 3
 #define RpSize1 9
 #define GpSize 7
+
+#define InSize_int 16
 
 int MW_Transfer(int *Lparms, double *Rparms, double *Parms, double *T_arr, double *DEM_arr, double *DDM_arr, double *RL, 
 	            int AZ_on, double *fZ_arr, double *TZ_arr, double *Z_arr, int *srange, double *GRparms);

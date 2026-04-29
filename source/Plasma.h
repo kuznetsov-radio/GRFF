@@ -1,6 +1,7 @@
 #pragma once
 #define me 9.1093837015e-28
 #define c 2.99792458e10
+#define mec2 (me*c*c)
 #define e (1.602176634e-19*c/10)
 #define kB 1.380649e-16
 #define hPl 6.62607015e-27 //Planck constant h (without bar)

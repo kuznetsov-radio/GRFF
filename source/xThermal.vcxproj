@@ -174,9 +174,12 @@
     <ClCompile Include="getparms.cpp" />
     <ClCompile Include="GR.cpp" />
     <ClCompile Include="GXcode.cpp" />
+    <ClCompile Include="Messages.cpp" />
     <ClCompile Include="MWtransfer.cpp" />
     <ClCompile Include="Neutrals.cpp" />
     <ClCompile Include="Plasma.cpp" />
+    <ClCompile Include="RFactorKappa.cpp" />
+    <ClCompile Include="RFactorN.cpp" />
     <ClCompile Include="Zeta.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -187,9 +190,12 @@
     <ClInclude Include="FF.h" />
     <ClInclude Include="GR.h" />
     <ClInclude Include="GXcode.h" />
+    <ClInclude Include="Messages.h" />
     <ClInclude Include="MWtransfer.h" />
     <ClInclude Include="Neutrals.h" />
     <ClInclude Include="Plasma.h" />
+    <ClInclude Include="RFactorKappa.h" />
+    <ClInclude Include="RFactorN.h" />
     <ClInclude Include="Zeta.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

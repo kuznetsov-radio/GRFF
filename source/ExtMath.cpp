@@ -104,6 +104,11 @@ double gammln(double xx)
  return tmp+log(2.5066282746310005*ser/x);
 }
 
+double Gamma(double z)
+{
+ return exp(gammln(z));
+}
+
 double LogFactorial(int n)
 {
  #define Nmax 21
@@ -145,3 +150,36 @@ int value_locate_M(float *a, int n, int k, double x)
  } 
  return j;
 } 
+
+void polint(const double *xa, const double *ya, int n, double x, double *y, double *dy)
+{
+ int i, m, ns=1;
+ double den, dif, dift, ho, hp, w;
+ double c[10], d[10]; //fixed-size arrays; n must be <=10
+ dif=fabs(x-xa[1]);
+ for (i=1; i<=n; i++)
+ {
+  if ((dift=fabs(x-xa[i]))<dif)
+  {
+   ns=i;
+   dif=dift;
+  }
+  c[i]=ya[i];
+  d[i]=ya[i];
+ }
+ *y=ya[ns--];
+ for (m=1; m<n; m++)
+ {
+  for (i=1; i<=n-m; i++)
+  {
+   ho=xa[i]-x;
+   hp=xa[i+m]-x;
+   w=c[i+1]-d[i];
+   den=ho-hp; 
+   den=w/den;
+   d[i]=hp*den;
+   c[i]=ho*den;
+  }
+  *y+=(*dy=(2*ns<(n-m) ? c[ns+1] : d[ns--]));
+ }
+}
