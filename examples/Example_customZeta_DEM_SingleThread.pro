@@ -41,7 +41,7 @@ pro Example_customZeta_DEM_SingleThread
          0.005  ] ;logarithmic step in frequency 
 
  ;single-voxel parameters: 
- ParmLocal=dblarr(15)
+ ParmLocal=dblarr(17)
  ParmLocal[0]=2d9    ;source depth, cm (total depth - the depths for individual voxels will be computed later)
  ParmLocal[1]=1d6    ;plasma temperature, K (not used in this example)
  ParmLocal[2]=1d9    ;electron/atomic concentration, cm^{-3} (not used in this example)
@@ -56,10 +56,12 @@ pro Example_customZeta_DEM_SingleThread
  ParmLocal[11]=0     ;local DEM on/off key (on)
  ParmLocal[12]=0     ;local DDM on/off key (on)
  ParmLocal[13]=0     ;abundance set index (0 in this example)
- ParmLocal[14]=0     ;reserved
+ ParmLocal[14]=0     ;source area, cm^2 (not used in this example)
+ ParmLocal[15]=0     ;thermal plasma distribution type (Maxwellian)
+ ParmLocal[16]=0     ;kappa or n parameter (not used in this example)
  
  ;multi-voxel parameters along line-of-sight:
- Parms=dblarr(15, Nz)
+ Parms=dblarr(17, Nz)
  for i=0, Nz-1 do begin
   Parms[*, i]=ParmLocal
   

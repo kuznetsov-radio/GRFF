@@ -22,7 +22,7 @@ pro Example_stdZeta_noDEM_MultiThread
                 0.005  ] ;logarithmic step in frequency 
 
  ;single-voxel parameters: 
- ParmLocal=dblarr(15)
+ ParmLocal=dblarr(17)
  ParmLocal[0]=2d9    ;source depth, cm (total depth - the depths for individual voxels will be computed later)
  ParmLocal[1]=3d6    ;plasma temperature, K
  ParmLocal[2]=9d8    ;electron concentration, cm^{-3}
@@ -37,10 +37,12 @@ pro Example_stdZeta_noDEM_MultiThread
  ParmLocal[11]=1     ;local DEM on/off key (off)
  ParmLocal[12]=1     ;local DDM on/off key (off)
  ParmLocal[13]=0     ;element abundance code (coronal, following Feldman 1992)
- ParmLocal[14]=0     ;reserved
+ ParmLocal[14]=0     ;source area, cm^2 (not used in this example)
+ ParmLocal[15]=0     ;thermal plasma distribution type (Maxwellian)
+ ParmLocal[16]=0     ;kappa or n parameter (not used in this example)
  
  Rparms_M=dblarr(3, Npix) ;global floating-point parameters for the lines-of-sight
- Parms_M=dblarr(15, Nz, Npix) ;multi-voxel parameters along the lines-of-sight
+ Parms_M=dblarr(17, Nz, Npix) ;multi-voxel parameters along the lines-of-sight
  for pix=0, Npix-1 do begin
   Rparms_M[*, pix]=Rparms_single ;the same parameters for all lines-of-sight are used in this example
  

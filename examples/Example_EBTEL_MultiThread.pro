@@ -33,7 +33,7 @@ pro Example_EBTEL_MultiThread
              0.005  ] ;logarithmic step in frequency 
 
  ;single-voxel parameters: 
- ParmLocal=dblarr(15)
+ ParmLocal=dblarr(17)
  ParmLocal[0]=2d9    ;source depth, cm (total depth - the depths for individual voxels will be computed later)
  ParmLocal[1]=1d6    ;plasma temperature, K (not used in this example)
  ParmLocal[2]=1d9    ;electron/atomic concentration, cm^{-3} (not used in this example)
@@ -49,9 +49,11 @@ pro Example_EBTEL_MultiThread
  ParmLocal[12]=0     ;L - will be changed later
  ParmLocal[13]=0     ;element abundance code (coronal, following Feldman 1992)
  ParmLocal[14]=0     ;source area, cm^2 (not used in this example)
+ ParmLocal[15]=0     ;thermal plasma distribution type (Maxwellian)
+ ParmLocal[16]=0     ;kappa or n parameter (not used in this example)
  
  Rparms_M=dblarr(3, Npix) ;global floating-point parameters for the lines-of-sight
- Parms_M=dblarr(15, Nz, Npix) ;multi-voxel parameters along the lines-of-sight
+ Parms_M=dblarr(17, Nz, Npix) ;multi-voxel parameters along the lines-of-sight
  
  for pix=0, Npix-1 do begin
   Rparms_M[*, pix]=RparmLocal ;the same parameters for all lines-of-sight are used in this example

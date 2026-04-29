@@ -19,7 +19,7 @@ Rparms[0]=1e18  # area, cm^2
 Rparms[1]=3e9   # starting frequency to calculate spectrum, Hz
 Rparms[2]=0.005 # logarithmic step in frequency
  
-ParmLocal=np.zeros(15, dtype='double') # array of voxel parameters - for a single voxel
+ParmLocal=np.zeros(17, dtype='double') # array of voxel parameters - for a single voxel
 ParmLocal[0]=2e7    # voxel size along the line-of-sight
 ParmLocal[1]=3e6    #plasma temperature, K
 ParmLocal[2]=9e8    #plasma density, cm^{-3}
@@ -30,7 +30,7 @@ ParmLocal[6]=0      #emission mechanism flag (all on)
 ParmLocal[7]=30     #maximum harmonic number
 # other parameters are zero by default
  
-Parms=np.zeros((15, Nz), dtype='double', order='F') # 2D array of input parameters - for multiple voxels
+Parms=np.zeros((17, Nz), dtype='double', order='F') # 2D array of input parameters - for multiple voxels
 for i in range(Nz):
     Parms[:, i]=ParmLocal # most of the parameters are the same in all voxels
     Parms[3, i]=1000.0-700.0*i/(Nz-1) # magnetic field decreases linearly from 1000 to 300 G
