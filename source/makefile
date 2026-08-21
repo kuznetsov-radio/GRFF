@@ -3,24 +3,23 @@ FLAGS=-fopenmp
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
-    EXTENSION = .so
+    ONAME = GRFF_DEM_Transfer.so
 endif
 ifeq ($(UNAME_S),Darwin)
-	FLAGS=-arch arm64 -lomp 
-    EXTENSION = .mac.so
+    FLAGS=-arch arm64 -lomp 
+    ONAME = GRFF_DEM_Transfer_arm64.so
     CC=gcc
-    FLAGS=-lomp
-    LDFLAGS=-L/opt/homebrew/lib -L/opt/homebrew/opt/llvm/lib
-    CPPFLAGS=-I/opt/homebrew/include -I/opt/homebrew/opt/llvm/include
+    LDFLAGS=-L$(brew --prefix libomp)/lib -lomp
+    CPPFLAGS=-I$(brew --prefix libomp)/include -Xpreprocessor -fopenmp
 endif
 ifeq ($(OS),Windows_NT)
-    EXTENSION = .dll
+    ONAME = GRFF_DEM_Transfer_64.dll
 else
-    EXTENSION = .so
+    ONAME = GRFF_DEM_Transfer.so
 endif
 
 GRFF_DEM_Transfer: Coulomb.o DEM.o ExtMath.o FF.o getparms.o GR.o ExtInterface.o MWtransfer.o Neutrals.o Plasma.o Zeta.o GXcode.o RFactorKappa.o RFactorN.o
-	$(CC) $(LDFLAGS) -shared -o GRFF_DEM_Transfer.so Coulomb.o DEM.o ExtMath.o FF.o getparms.o GR.o ExtInterface.o MWtransfer.o Neutrals.o Plasma.o Zeta.o GXcode.o RFactorKappa.o RFactorN.o
+	$(CC) $(LDFLAGS) -shared -o $(ONAME) Coulomb.o DEM.o ExtMath.o FF.o getparms.o GR.o ExtInterface.o MWtransfer.o Neutrals.o Plasma.o Zeta.o GXcode.o RFactorKappa.o RFactorN.o
 
 Coulomb.o: Coulomb.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
 	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D  LINUX Coulomb.cpp
@@ -65,7 +64,7 @@ RFactorN.o: GXcode.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals
 	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D  LINUX RFactorN.cpp
 
 install:
-	cp *$(EXTENSION) ../binaries
+	cp $(ONAME) ../binaries
 
 clean:
-	rm -f *.o *$(EXTENSION)
+	rm -f *.o $(ONAME)
