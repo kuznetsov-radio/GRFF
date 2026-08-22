@@ -1,6 +1,8 @@
 CC=g++
 FLAGS=-fopenmp
 
+ONAME = GRFF_DEM_Transfer.so
+
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
     ONAME = GRFF_DEM_Transfer.so
@@ -14,8 +16,6 @@ ifeq ($(UNAME_S),Darwin)
 endif
 ifeq ($(OS),Windows_NT)
     ONAME = GRFF_DEM_Transfer_64.dll
-else
-    ONAME = GRFF_DEM_Transfer.so
 endif
 
 GRFF_DEM_Transfer: Coulomb.o DEM.o ExtMath.o FF.o getparms.o GR.o ExtInterface.o MWtransfer.o Neutrals.o Plasma.o Zeta.o GXcode.o RFactorKappa.o RFactorN.o
