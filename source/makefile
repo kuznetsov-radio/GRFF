@@ -1,70 +1,94 @@
-CC=g++
-FLAGS=-fopenmp
-
-ONAME = GRFF_DEM_Transfer.so
-
+# LINUX is used in the sources as "not Windows" (OpenMP vs MSVC PPL).
+# Keep defining it on Darwin so the OpenMP path is compiled.
 UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-    ONAME = GRFF_DEM_Transfer.so
-endif
+UNAME_M := $(shell uname -m)
+BINDIR = ../binaries
+
+CXX ?= g++
+COMMON_FLAGS = -c -O3 -fPIC -D LINUX
+
 ifeq ($(UNAME_S),Darwin)
-    FLAGS=-arch arm64 -lomp 
-    ONAME = GRFF_DEM_Transfer_arm64.so
-    CC=gcc
-    LDFLAGS=-L$(brew --prefix libomp)/lib -lomp
-    CPPFLAGS=-I$(brew --prefix libomp)/include -Xpreprocessor -fopenmp
+LIBOMP := $(shell brew --prefix libomp 2>/dev/null)
+ifeq ($(wildcard $(LIBOMP)/include/omp.h),)
+LIBOMP := /opt/homebrew/opt/libomp
 endif
-ifeq ($(OS),Windows_NT)
-    ONAME = GRFF_DEM_Transfer_64.dll
+ifeq ($(wildcard $(LIBOMP)/include/omp.h),)
+LIBOMP := /usr/local/opt/libomp
+endif
+ifeq ($(UNAME_M),arm64)
+ONAME = $(BINDIR)/GRFF_DEM_Transfer_arm64.so
+else
+ONAME = $(BINDIR)/GRFF_DEM_Transfer_x86_64.so
+endif
+# Apple clang rejects -fopenmp; Homebrew libomp needs the preprocessor flag.
+CXXFLAGS = $(COMMON_FLAGS) -Xpreprocessor -fopenmp -I$(LIBOMP)/include
+LDFLAGS = -shared -L$(LIBOMP)/lib -lomp -Wl,-rpath,$(LIBOMP)/lib
+else ifeq ($(UNAME_S),Linux)
+ONAME = $(BINDIR)/GRFF_DEM_Transfer.so
+CXXFLAGS = $(COMMON_FLAGS) -fopenmp
+LDFLAGS = -shared -fopenmp
+else ifeq ($(OS),Windows_NT)
+ONAME = GRFF_DEM_Transfer_64.dll
+CXXFLAGS = $(COMMON_FLAGS) -fopenmp
+LDFLAGS = -shared -fopenmp
+else
+ONAME = GRFF_DEM_Transfer.so
+CXXFLAGS = $(COMMON_FLAGS) -fopenmp
+LDFLAGS = -shared -fopenmp
 endif
 
-GRFF_DEM_Transfer: Coulomb.o DEM.o ExtMath.o FF.o getparms.o GR.o ExtInterface.o MWtransfer.o Neutrals.o Plasma.o Zeta.o GXcode.o RFactorKappa.o RFactorN.o
-	$(CC) $(LDFLAGS) -shared -o $(ONAME) Coulomb.o DEM.o ExtMath.o FF.o getparms.o GR.o ExtInterface.o MWtransfer.o Neutrals.o Plasma.o Zeta.o GXcode.o RFactorKappa.o RFactorN.o
+OBJS = Coulomb.o DEM.o ExtMath.o FF.o getparms.o GR.o ExtInterface.o MWtransfer.o \
+       Neutrals.o Plasma.o Zeta.o GXcode.o RFactorKappa.o RFactorN.o
+
+GRFF_DEM_Transfer: $(OBJS)
+	$(CXX) $(LDFLAGS) -o $(ONAME) $(OBJS)
 
 Coulomb.o: Coulomb.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX Coulomb.cpp
+	$(CXX) $(CXXFLAGS) Coulomb.cpp
 
 DEM.o: DEM.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX DEM.cpp
+	$(CXX) $(CXXFLAGS) DEM.cpp
 
 ExtMath.o: ExtMath.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX ExtMath.cpp
+	$(CXX) $(CXXFLAGS) ExtMath.cpp
 
 FF.o: FF.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX FF.cpp
+	$(CXX) $(CXXFLAGS) FF.cpp
 
 getparms.o: getparms.cpp
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX getparms.cpp
+	$(CXX) $(CXXFLAGS) getparms.cpp
 
 GR.o: GR.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX GR.cpp
+	$(CXX) $(CXXFLAGS) GR.cpp
 
 ExtInterface.o: ExtInterface.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX ExtInterface.cpp
+	$(CXX) $(CXXFLAGS) ExtInterface.cpp
 
 MWtransfer.o: MWtransfer.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX MWtransfer.cpp
+	$(CXX) $(CXXFLAGS) MWtransfer.cpp
 
 Neutrals.o: Neutrals.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX Neutrals.cpp
- 
+	$(CXX) $(CXXFLAGS) Neutrals.cpp
+
 Plasma.o: Plasma.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX Plasma.cpp
+	$(CXX) $(CXXFLAGS) Plasma.cpp
 
 Zeta.o: Zeta.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX Zeta.cpp
+	$(CXX) $(CXXFLAGS) Zeta.cpp
 
 GXcode.o: GXcode.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX GXcode.cpp
+	$(CXX) $(CXXFLAGS) GXcode.cpp
 
-RFactorKappa.o: GXcode.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX RFactorKappa.cpp
+RFactorKappa.o: RFactorKappa.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
+	$(CXX) $(CXXFLAGS) RFactorKappa.cpp
 
-RFactorN.o: GXcode.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
-	$(CC) $(FLAGS) $(CPPFLAGS) -c -O3 -fPIC -D LINUX RFactorN.cpp
+RFactorN.o: RFactorN.cpp Coulomb.h DEM.h ExtMath.h FF.h GR.h MWtransfer.h Neutrals.h Plasma.h Zeta.h GXcode.h ExtInterface.h RFactorKappa.h RFactorN.h
+	$(CXX) $(CXXFLAGS) RFactorN.cpp
 
-install:
-	cp $(ONAME) ../binaries
+.PHONY: install clean
+
+install: GRFF_DEM_Transfer
 
 clean:
-	rm -f *.o $(ONAME)
+	rm -f *.o
+	rm -f $(BINDIR)/GRFF_DEM_Transfer.so $(BINDIR)/GRFF_DEM_Transfer_arm64.so $(BINDIR)/GRFF_DEM_Transfer_x86_64.so
