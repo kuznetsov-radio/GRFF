@@ -1,11 +1,11 @@
-# LINUX is used in the sources as "not Windows" (OpenMP vs MSVC PPL).
-# Keep defining it on Darwin so the OpenMP path is compiled.
+# -D LINUX in sources means "not Windows" (OpenMP vs MSVC PPL). It is set on
+# Darwin and Linux only; Windows builds use xThermal.vcxproj, not this makefile.
 UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
 BINDIR = ../binaries
 
 CXX ?= g++
-COMMON_FLAGS = -c -O3 -fPIC -D LINUX
+COMMON_COMPILE = -c -O3 -fPIC
 
 ifeq ($(UNAME_S),Darwin)
 LIBOMP := $(shell brew --prefix libomp 2>/dev/null)
@@ -15,25 +15,28 @@ endif
 ifeq ($(wildcard $(LIBOMP)/include/omp.h),)
 LIBOMP := /usr/local/opt/libomp
 endif
+ifeq ($(wildcard $(LIBOMP)/include/omp.h),)
+$(error Homebrew libomp not found (need omp.h). Install with: brew install libomp)
+endif
 ifeq ($(UNAME_M),arm64)
 ONAME = $(BINDIR)/GRFF_DEM_Transfer_arm64.so
 else
 ONAME = $(BINDIR)/GRFF_DEM_Transfer_x86_64.so
 endif
 # Apple clang rejects -fopenmp; Homebrew libomp needs the preprocessor flag.
-CXXFLAGS = $(COMMON_FLAGS) -Xpreprocessor -fopenmp -I$(LIBOMP)/include
+CXXFLAGS = $(COMMON_COMPILE) -D LINUX -Xpreprocessor -fopenmp -I$(LIBOMP)/include
 LDFLAGS = -shared -L$(LIBOMP)/lib -lomp -Wl,-rpath,$(LIBOMP)/lib
 else ifeq ($(UNAME_S),Linux)
 ONAME = $(BINDIR)/GRFF_DEM_Transfer.so
-CXXFLAGS = $(COMMON_FLAGS) -fopenmp
+CXXFLAGS = $(COMMON_COMPILE) -D LINUX -fopenmp
 LDFLAGS = -shared -fopenmp
 else ifeq ($(OS),Windows_NT)
 ONAME = GRFF_DEM_Transfer_64.dll
-CXXFLAGS = $(COMMON_FLAGS) -fopenmp
+CXXFLAGS = $(COMMON_COMPILE) -fopenmp
 LDFLAGS = -shared -fopenmp
 else
 ONAME = GRFF_DEM_Transfer.so
-CXXFLAGS = $(COMMON_FLAGS) -fopenmp
+CXXFLAGS = $(COMMON_COMPILE) -D LINUX -fopenmp
 LDFLAGS = -shared -fopenmp
 endif
 
@@ -91,4 +94,3 @@ install: GRFF_DEM_Transfer
 
 clean:
 	rm -f *.o
-	rm -f $(BINDIR)/GRFF_DEM_Transfer.so $(BINDIR)/GRFF_DEM_Transfer_arm64.so $(BINDIR)/GRFF_DEM_Transfer_x86_64.so
